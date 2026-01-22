@@ -26,11 +26,96 @@
         .sortable-ghost { opacity: 0.4; border: 2px dashed #3b82f6; background: #eff6ff; }
         .drag-handle { cursor: grab; }
         .drag-handle:active { cursor: grabbing; }
+        
+        /* Mobile Responsive Styles */
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            
+            /* Main sidebar - hidden by default on mobile */
+            .sidebar-main {
+                position: fixed !important;
+                left: 0;
+                top: 0;
+                width: 85% !important;
+                max-width: 320px !important;
+                height: 100% !important;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 50 !important;
+            }
+            .sidebar-main.open { transform: translateX(0); }
+            
+            /* Mobile overlay */
+            .mobile-overlay {
+                display: none;
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 40;
+            }
+            .mobile-overlay.active { display: block; }
+            
+            /* Mobile hamburger button */
+            .mobile-menu-btn {
+                display: flex !important;
+                position: fixed;
+                top: 12px;
+                left: 12px;
+                z-index: 35;
+                width: 44px;
+                height: 44px;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                align-items: center;
+                justify-content: center;
+            }
+            
+            /* Adjust map controls position on mobile */
+            .map-controls {
+                top: 70px !important;
+                right: 12px !important;
+            }
+            
+            /* Metrics panel responsive */
+            #metricsPanel {
+                width: calc(100vw - 24px) !important;
+                max-width: 280px !important;
+            }
+            
+            /* Right stops panel */
+            #stopsPanel {
+                width: 85% !important;
+                max-width: 300px !important;
+            }
+            
+            /* Toast position on mobile */
+            #toastContainer {
+                right: 12px !important;
+                bottom: 12px !important;
+                left: 12px !important;
+            }
+            #toastContainer > div {
+                min-width: auto !important;
+                width: 100% !important;
+            }
+        }
+        
+        /* Hide hamburger on desktop */
+        .mobile-menu-btn { display: none; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden text-gray-800 relative">
 
-    <aside class="w-96 bg-white shadow-xl z-20 flex flex-col border-r border-gray-200">
+    <!-- Mobile Hamburger Button -->
+    <button id="mobileMenuBtn" class="mobile-menu-btn" onclick="toggleMobileSidebar()">
+        <i class="ph ph-list text-xl text-gray-700"></i>
+    </button>
+    
+    <!-- Mobile Overlay -->
+    <div id="mobileOverlay" class="mobile-overlay" onclick="toggleMobileSidebar()"></div>
+
+    <aside id="mainSidebar" class="sidebar-main w-96 bg-white shadow-xl z-20 flex flex-col border-r border-gray-200">
         <div class="px-6 py-5 border-b border-gray-100 flex items-center space-x-3 bg-slate-50">
             <div class="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200">
                 <i class="ph ph-bus text-white text-xl"></i>
@@ -92,7 +177,7 @@
     </aside>
 
     <main class="flex-1 relative flex flex-col transition-all duration-300" id="mainContent">
-        <div class="absolute top-4 right-4 z-10 flex flex-col items-end space-y-4 pointer-events-none">
+        <div class="map-controls absolute top-4 right-4 z-10 flex flex-col items-end space-y-4 pointer-events-none">
             <button id="toggleStopsBtn" class="pointer-events-auto bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold py-2.5 px-4 rounded-xl shadow-lg border border-gray-200 transition flex items-center gap-2">
                 <i class="ph ph-map-pin text-lg"></i> Show All Stops
             </button>
@@ -157,6 +242,20 @@
         const API_BASE_URL = window.location.hostname === 'localhost' 
             ? 'http://localhost:5001' 
             : '';  // Empty string means same origin on Render
+
+        // --- MOBILE SIDEBAR ---
+        const mainSidebar = document.getElementById('mainSidebar');
+        const mobileOverlay = document.getElementById('mobileOverlay');
+        
+        function toggleMobileSidebar() {
+            mainSidebar.classList.toggle('open');
+            mobileOverlay.classList.toggle('active');
+        }
+        
+        function closeMobileSidebar() {
+            mainSidebar.classList.remove('open');
+            mobileOverlay.classList.remove('active');
+        }
 
         document.addEventListener('DOMContentLoaded', async () => {
             initializeMap();
