@@ -19,13 +19,19 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .awesomplete { width: 100%; }
-        .awesomplete > ul { border-radius: 0.5rem; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 0; margin-top: 4px; }
+        .awesomplete { width: 100%; position: relative; }
+        .awesomplete > ul { border-radius: 0.5rem; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 0; margin-top: 4px; z-index: 9999 !important; position: absolute !important; }
         .awesomplete > ul > li { padding: 8px 12px; font-size: 0.9rem; color: #374151; }
         .awesomplete > ul > li:hover, .awesomplete > ul > li[aria-selected="true"] { background: #eff6ff; color: #1d4ed8; }
         .sortable-ghost { opacity: 0.4; border: 2px dashed #3b82f6; background: #eff6ff; }
         .drag-handle { cursor: grab; }
         .drag-handle:active { cursor: grabbing; }
+        
+        /* Mobile dropdown badge styles */
+        .stop-badge { display: inline-block; font-size: 9px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600; }
+        .stop-badge.airport { background: #f3e8ff; color: #7c3aed; }
+        .stop-badge.high-demand { background: #ffedd5; color: #ea580c; }
+        .stop-badge.commercial { background: #dbeafe; color: #2563eb; }
         
         /* === MOBILE RESPONSIVE STYLES === */
         @media (max-width: 768px) {
@@ -508,11 +514,38 @@
         // --- MOBILE AUTOCOMPLETE ---
         function setupMobileAutocomplete() {
             if (!mobileStopSearch) return;
+            
+            // Create list with labels that include badges
+            const stopList = busStops.map(s => {
+                let badge = '';
+                const isAirport = s.category === 'airport' || s.name.toLowerCase().includes('airport');
+                const isHighDemand = (s.demand_multiplier || 1) >= 1.7;
+                const isCommercial = s.category === 'commercial';
+                
+                if (isAirport) badge = '<span class="stop-badge airport">✈ Airport</span>';
+                else if (isHighDemand) badge = '<span class="stop-badge high-demand">🔥 High Demand</span>';
+                else if (isCommercial) badge = '<span class="stop-badge commercial">🏪 Commercial</span>';
+                
+                return { label: s.name + badge, value: s.name };
+            });
+            
             mobileAwesomplete = new Awesomplete(mobileStopSearch, {
-                list: busStops.map(s => s.name),
+                list: stopList,
                 minChars: 1,
-                maxItems: 5,
-                autoFirst: true
+                maxItems: 6,
+                autoFirst: true,
+                filter: function(text, input) {
+                    return text.value.toLowerCase().includes(input.toLowerCase());
+                },
+                item: function(text, input) {
+                    const li = document.createElement('li');
+                    li.innerHTML = text.label;
+                    li.setAttribute('aria-selected', 'false');
+                    return li;
+                },
+                replace: function(text) {
+                    this.input.value = text.value;
+                }
             });
         }
 
