@@ -61,14 +61,17 @@
                 z-index: 90;
             }
             
-            /* Mobile Map Controls */
+            /* Mobile Map Controls - only show when map is active */
             .mobile-map-controls {
+                display: none !important;
+            }
+            .mobile-map-view.active .mobile-map-controls {
+                display: flex !important;
                 position: fixed;
                 top: 12px;
                 left: 12px;
                 right: 12px;
                 z-index: 100;
-                display: flex;
                 justify-content: space-between;
             }
             .mobile-map-btn {
