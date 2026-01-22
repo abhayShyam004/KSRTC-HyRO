@@ -27,23 +27,81 @@
         .drag-handle { cursor: grab; }
         .drag-handle:active { cursor: grabbing; }
         
-        /* Mobile Responsive Styles */
+        /* === MOBILE RESPONSIVE STYLES === */
         @media (max-width: 768px) {
-            body { flex-direction: column; }
+            /* Hide desktop sidebar on mobile */
+            .sidebar-main { display: none !important; }
             
-            /* Main sidebar - hidden by default on mobile */
-            .sidebar-main {
-                position: fixed !important;
-                left: 0;
-                top: 0;
-                width: 85% !important;
-                max-width: 320px !important;
-                height: 100% !important;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-                z-index: 50 !important;
+            /* Mobile Dashboard - Full screen by default */
+            .mobile-dashboard {
+                display: flex !important;
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+                z-index: 100;
+                flex-direction: column;
+                overflow-y: auto;
             }
-            .sidebar-main.open { transform: translateX(0); }
+            .mobile-dashboard.hidden { display: none !important; }
+            
+            /* Mobile Map View - Hidden by default */
+            .mobile-map-view {
+                display: none !important;
+            }
+            .mobile-map-view.active {
+                display: block !important;
+                position: fixed;
+                top: 0; left: 0; right: 0; bottom: 0;
+                z-index: 90;
+            }
+            
+            /* Mobile Map Controls */
+            .mobile-map-controls {
+                position: fixed;
+                top: 12px;
+                left: 12px;
+                right: 12px;
+                z-index: 100;
+                display: flex;
+                justify-content: space-between;
+            }
+            .mobile-map-btn {
+                width: 44px;
+                height: 44px;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: none;
+                cursor: pointer;
+            }
+            
+            /* Mobile Route Builder Drawer */
+            .mobile-drawer {
+                position: fixed;
+                bottom: 0; left: 0; right: 0;
+                max-height: 70vh;
+                background: white;
+                border-radius: 24px 24px 0 0;
+                box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
+                z-index: 110;
+                transform: translateY(100%);
+                transition: transform 0.3s ease;
+                overflow-y: auto;
+            }
+            .mobile-drawer.open { transform: translateY(0); }
+            .mobile-drawer-handle {
+                width: 40px;
+                height: 4px;
+                background: #d1d5db;
+                border-radius: 2px;
+                margin: 12px auto;
+            }
+            
+            /* Hide desktop main content */
+            #mainContent { display: none !important; }
             
             /* Mobile overlay */
             .mobile-overlay {
@@ -51,70 +109,157 @@
                 position: fixed;
                 top: 0; left: 0; right: 0; bottom: 0;
                 background: rgba(0,0,0,0.5);
-                z-index: 40;
+                z-index: 105;
             }
             .mobile-overlay.active { display: block; }
-            
-            /* Mobile hamburger button */
-            .mobile-menu-btn {
-                display: flex !important;
-                position: fixed;
-                top: 12px;
-                left: 12px;
-                z-index: 35;
-                width: 44px;
-                height: 44px;
-                background: white;
-                border-radius: 12px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-                align-items: center;
-                justify-content: center;
-            }
-            
-            /* Adjust map controls position on mobile */
-            .map-controls {
-                top: 70px !important;
-                right: 12px !important;
-            }
-            
-            /* Metrics panel responsive */
-            #metricsPanel {
-                width: calc(100vw - 24px) !important;
-                max-width: 280px !important;
-            }
-            
-            /* Right stops panel */
-            #stopsPanel {
-                width: 85% !important;
-                max-width: 300px !important;
-            }
             
             /* Toast position on mobile */
             #toastContainer {
                 right: 12px !important;
-                bottom: 12px !important;
+                bottom: 80px !important;
                 left: 12px !important;
-            }
-            #toastContainer > div {
-                min-width: auto !important;
-                width: 100% !important;
+                z-index: 200 !important;
             }
         }
         
-        /* Hide hamburger on desktop */
-        .mobile-menu-btn { display: none; }
+        /* Hide mobile elements on desktop */
+        .mobile-dashboard, .mobile-map-view, .mobile-drawer, .mobile-map-controls { display: none; }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden text-gray-800 relative">
 
-    <!-- Mobile Hamburger Button -->
-    <button id="mobileMenuBtn" class="mobile-menu-btn" onclick="toggleMobileSidebar()">
-        <i class="ph ph-list text-xl text-gray-700"></i>
-    </button>
-    
-    <!-- Mobile Overlay -->
-    <div id="mobileOverlay" class="mobile-overlay" onclick="toggleMobileSidebar()"></div>
+    <!-- ========== MOBILE DASHBOARD (Shown First) ========== -->
+    <div id="mobileDashboard" class="mobile-dashboard">
+        <!-- Header -->
+        <div class="px-5 pt-8 pb-4">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="h-12 w-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="ph ph-bus text-white text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-white">KSRTC-HyRO</h1>
+                    <p class="text-blue-300 text-sm">Route Optimizer</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Route Builder Card -->
+        <div class="flex-1 px-4 pb-4 overflow-y-auto">
+            <div class="bg-white/10 backdrop-blur rounded-2xl p-4 mb-4">
+                <label class="block text-xs font-semibold text-blue-200 uppercase tracking-wide mb-3">Build Your Route</label>
+                <div class="relative mb-3">
+                    <input id="mobileStopSearch" class="w-full pl-10 pr-4 py-3 bg-white/20 border border-white/10 rounded-xl text-sm text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white/30 transition" placeholder="Search stop (e.g. Aluva)...">
+                    <i class="ph ph-magnifying-glass absolute left-3.5 top-3.5 text-blue-200 text-lg"></i>
+                </div>
+                <button id="mobileAddStopBtn" class="w-full py-3 bg-blue-500 hover:bg-blue-400 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2">
+                    <i class="ph ph-plus-circle text-lg"></i> Add Stop
+                </button>
+            </div>
+            
+            <!-- Current Route -->
+            <div class="bg-white/10 backdrop-blur rounded-2xl p-4 mb-4">
+                <div class="flex items-center justify-between mb-3">
+                    <label class="text-xs font-semibold text-blue-200 uppercase tracking-wide">Current Route</label>
+                    <span id="mobileStopCount" class="px-2 py-0.5 bg-blue-500/50 text-white text-xs font-bold rounded-full">0 Stops</span>
+                </div>
+                <ul id="mobileRouteList" class="space-y-2 min-h-[80px] max-h-[200px] overflow-y-auto">
+                    <li class="text-center py-6 border-2 border-dashed border-white/20 rounded-xl">
+                        <p class="text-sm text-blue-200">No stops added yet</p>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Quick Stats -->
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                    <i class="ph ph-clock text-orange-400 text-2xl mb-1"></i>
+                    <p id="mobileValDuration" class="text-xl font-bold text-white">--</p>
+                    <p class="text-xs text-blue-200">Est. Time</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                    <i class="ph ph-path text-emerald-400 text-2xl mb-1"></i>
+                    <p id="mobileValDistance" class="text-xl font-bold text-white">--</p>
+                    <p class="text-xs text-blue-200">Distance</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                    <i class="ph ph-users text-blue-400 text-2xl mb-1"></i>
+                    <p id="mobileValPassengers" class="text-xl font-bold text-white">--</p>
+                    <p class="text-xs text-blue-200">Passengers</p>
+                </div>
+                <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                    <i class="ph ph-gas-pump text-red-400 text-2xl mb-1"></i>
+                    <p id="mobileValCost" class="text-xl font-bold text-white">--</p>
+                    <p class="text-xs text-blue-200">Fuel Cost</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Optimize Button -->
+        <div class="p-4 bg-gradient-to-t from-slate-900/50 to-transparent">
+            <button id="mobileOptimizeBtn" class="w-full py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold text-lg rounded-2xl shadow-lg shadow-blue-500/30 transition transform active:scale-95 flex items-center justify-center gap-3">
+                <i class="ph ph-lightning text-2xl"></i> Optimize Route
+            </button>
+            <p id="mobileStatus" class="text-xs text-center text-blue-300 mt-3">Add stops to begin</p>
+        </div>
+    </div>
 
+    <!-- ========== MOBILE MAP VIEW (Shown After Optimize) ========== -->
+    <div id="mobileMapView" class="mobile-map-view">
+        <div id="mobileMap" class="w-full h-full"></div>
+        
+        <!-- Map Controls: Top Left & Right -->
+        <div class="mobile-map-controls">
+            <button id="mobileMenuBtn" class="mobile-map-btn" onclick="openMobileDrawer()">
+                <i class="ph ph-list text-xl text-gray-700"></i>
+            </button>
+            <div class="flex gap-2">
+                <button id="mobileShowStopsBtn" class="mobile-map-btn" onclick="toggleMobileAllStops()">
+                    <i class="ph ph-map-pin text-xl text-gray-700"></i>
+                </button>
+                <button class="mobile-map-btn" onclick="closeMobileMapView()">
+                    <i class="ph ph-x text-xl text-gray-700"></i>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Bottom Metrics Bar -->
+        <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md rounded-t-2xl shadow-2xl p-4 z-110">
+            <div class="flex justify-around text-center">
+                <div>
+                    <p id="mobileMapDuration" class="text-lg font-bold text-gray-800">--</p>
+                    <p class="text-[10px] text-gray-500 uppercase">Duration</p>
+                </div>
+                <div class="border-l border-gray-200 pl-4">
+                    <p id="mobileMapDistance" class="text-lg font-bold text-gray-800">--</p>
+                    <p class="text-[10px] text-gray-500 uppercase">Distance</p>
+                </div>
+                <div class="border-l border-gray-200 pl-4">
+                    <p id="mobileMapPassengers" class="text-lg font-bold text-gray-800">--</p>
+                    <p class="text-[10px] text-gray-500 uppercase">Passengers</p>
+                </div>
+                <div class="border-l border-gray-200 pl-4">
+                    <p id="mobileMapCost" class="text-lg font-bold text-gray-800">--</p>
+                    <p class="text-[10px] text-gray-500 uppercase">Fuel</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== MOBILE DRAWER (Route Editor on Map) ========== -->
+    <div id="mobileDrawer" class="mobile-drawer">
+        <div class="mobile-drawer-handle"></div>
+        <div class="px-4 pb-6">
+            <h3 class="font-bold text-gray-800 mb-3">Edit Route</h3>
+            <ul id="mobileDrawerRouteList" class="space-y-2 max-h-[40vh] overflow-y-auto"></ul>
+            <button onclick="closeMobileDrawer()" class="mt-4 w-full py-3 bg-blue-600 text-white font-semibold rounded-xl">Done</button>
+        </div>
+    </div>
+
+    <!-- Mobile Overlay -->
+    <div id="mobileOverlay" class="mobile-overlay" onclick="closeMobileDrawer()"></div>
+
+
+    <!-- ========== DESKTOP SIDEBAR (Hidden on Mobile) ========== -->
     <aside id="mainSidebar" class="sidebar-main w-96 bg-white shadow-xl z-20 flex flex-col border-r border-gray-200">
         <div class="px-6 py-5 border-b border-gray-100 flex items-center space-x-3 bg-slate-50">
             <div class="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200">
@@ -243,18 +388,227 @@
             ? 'http://localhost:5001' 
             : '';  // Empty string means same origin on Render
 
-        // --- MOBILE SIDEBAR ---
-        const mainSidebar = document.getElementById('mainSidebar');
+        // --- MOBILE ELEMENTS ---
+        const mobileDashboard = document.getElementById('mobileDashboard');
+        const mobileMapView = document.getElementById('mobileMapView');
+        const mobileDrawer = document.getElementById('mobileDrawer');
         const mobileOverlay = document.getElementById('mobileOverlay');
-        
-        function toggleMobileSidebar() {
-            mainSidebar.classList.toggle('open');
-            mobileOverlay.classList.toggle('active');
+        const mobileStopSearch = document.getElementById('mobileStopSearch');
+        const mobileAddStopBtn = document.getElementById('mobileAddStopBtn');
+        const mobileOptimizeBtn = document.getElementById('mobileOptimizeBtn');
+        const mobileRouteList = document.getElementById('mobileRouteList');
+        const mobileStopCount = document.getElementById('mobileStopCount');
+        const mobileStatus = document.getElementById('mobileStatus');
+        let mobileMap = null;
+        let mobileRouteLayer = null;
+        let mobileMarkers = [];
+        let mobileAwesomplete = null;
+        let mobileAllStopsLayer = null;
+        let mobileAllStopsVisible = false;
+
+        // --- MOBILE MAP FUNCTIONS ---
+        function initMobileMap() {
+            if (mobileMap) return;
+            mobileMap = L.map('mobileMap').setView([10.0, 76.3], 9);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '© OpenStreetMap'
+            }).addTo(mobileMap);
         }
-        
-        function closeMobileSidebar() {
-            mainSidebar.classList.remove('open');
+
+        function showMobileMapView() {
+            mobileDashboard.classList.add('hidden');
+            mobileMapView.classList.add('active');
+            initMobileMap();
+            setTimeout(() => mobileMap.invalidateSize(), 100);
+        }
+
+        function closeMobileMapView() {
+            mobileMapView.classList.remove('active');
+            mobileDashboard.classList.remove('hidden');
+        }
+
+        function openMobileDrawer() {
+            renderMobileDrawerRouteList();
+            mobileDrawer.classList.add('open');
+            mobileOverlay.classList.add('active');
+        }
+
+        function closeMobileDrawer() {
+            mobileDrawer.classList.remove('open');
             mobileOverlay.classList.remove('active');
+        }
+
+        function toggleMobileAllStops() {
+            if (!mobileAllStopsVisible) {
+                if (!mobileAllStopsLayer) {
+                    const allMarkers = busStops.map(stop => {
+                        return L.circleMarker([stop.lat, stop.lon], {
+                            radius: 6, color: '#475569', weight: 2, fillColor: '#94a3b8', fillOpacity: 0.9
+                        }).bindTooltip(stop.name, { direction: 'top', offset: [0, -5] });
+                    });
+                    mobileAllStopsLayer = L.layerGroup(allMarkers);
+                }
+                mobileMap.addLayer(mobileAllStopsLayer);
+            } else {
+                if (mobileAllStopsLayer) mobileMap.removeLayer(mobileAllStopsLayer);
+            }
+            mobileAllStopsVisible = !mobileAllStopsVisible;
+        }
+
+        // --- MOBILE ROUTE LIST ---
+        function renderMobileRouteList() {
+            if (!mobileRouteList) return;
+            mobileStopCount.innerText = currentRoute.length + ' Stops';
+            if (currentRoute.length === 0) {
+                mobileRouteList.innerHTML = '<li class="text-center py-6 border-2 border-dashed border-white/20 rounded-xl"><p class="text-sm text-blue-200">No stops added yet</p></li>';
+                mobileStatus.textContent = 'Add stops to begin';
+                return;
+            }
+            mobileStatus.textContent = currentRoute.length + ' stops ready';
+            mobileRouteList.innerHTML = currentRoute.map((stop, i) => `
+                <li class="flex items-center justify-between p-3 bg-white/20 rounded-xl">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full ${i === 0 ? 'bg-green-500' : i === currentRoute.length - 1 ? 'bg-red-500' : 'bg-blue-500'} text-white text-xs flex items-center justify-center font-bold">${i + 1}</span>
+                        <span class="text-sm text-white truncate max-w-[150px]">${stop.name}</span>
+                    </div>
+                    <button onclick="removeStopMobile(${i})" class="text-red-300 hover:text-red-100">
+                        <i class="ph ph-trash text-lg"></i>
+                    </button>
+                </li>
+            `).join('');
+        }
+
+        function renderMobileDrawerRouteList() {
+            const list = document.getElementById('mobileDrawerRouteList');
+            if (currentRoute.length === 0) {
+                list.innerHTML = '<li class="text-center py-4 text-gray-400">No stops</li>';
+                return;
+            }
+            list.innerHTML = currentRoute.map((stop, i) => `
+                <li class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                    <div class="flex items-center gap-2">
+                        <span class="w-6 h-6 rounded-full ${i === 0 ? 'bg-green-500' : i === currentRoute.length - 1 ? 'bg-red-500' : 'bg-blue-500'} text-white text-xs flex items-center justify-center font-bold">${i + 1}</span>
+                        <span class="text-sm text-gray-700">${stop.name}</span>
+                    </div>
+                    <button onclick="removeStopMobile(${i})" class="text-red-400 hover:text-red-600">
+                        <i class="ph ph-trash text-lg"></i>
+                    </button>
+                </li>
+            `).join('');
+        }
+
+        function removeStopMobile(index) {
+            currentRoute.splice(index, 1);
+            renderMobileRouteList();
+            renderMobileDrawerRouteList();
+            renderRouteList(); // Sync desktop
+        }
+
+        // --- MOBILE AUTOCOMPLETE ---
+        function setupMobileAutocomplete() {
+            if (!mobileStopSearch) return;
+            mobileAwesomplete = new Awesomplete(mobileStopSearch, {
+                list: busStops.map(s => s.name),
+                minChars: 1,
+                maxItems: 5,
+                autoFirst: true
+            });
+        }
+
+        function mobileAddStop() {
+            const stopName = mobileStopSearch.value;
+            if (!stopName) { showToast("Enter a stop name", 'error'); return; }
+            const stop = busStops.find(s => s.name === stopName);
+            if (!stop) { showToast("Stop not found", 'error'); return; }
+            if (currentRoute.some(s => s.bus_stop_id === stop.bus_stop_id)) {
+                showToast("Stop already added", 'error'); return;
+            }
+            currentRoute.push(stop);
+            mobileStopSearch.value = '';
+            renderMobileRouteList();
+            renderRouteList(); // Sync desktop
+            showToast("Added: " + stop.name, 'success');
+        }
+
+        // --- MOBILE OPTIMIZE ---
+        async function mobileHandleOptimize() {
+            if (currentRoute.length < 2) {
+                showToast("Add at least 2 stops", 'error');
+                return;
+            }
+            mobileOptimizeBtn.disabled = true;
+            mobileOptimizeBtn.innerHTML = '<i class="ph ph-spinner animate-spin text-2xl"></i> Optimizing...';
+
+            const coords = currentRoute.map(stop => `${stop.lon.toFixed(5)},${stop.lat.toFixed(5)}`).join(';');
+            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson&overview=full`;
+
+            try {
+                const osrmResponse = await fetch(osrmUrl);
+                if (!osrmResponse.ok) throw new Error('Routing failed');
+                const routeData = await osrmResponse.json();
+                if (!routeData.routes || routeData.routes.length === 0) throw new Error('No route found');
+                const route = routeData.routes[0];
+                const distance = route.distance / 1000;
+                const duration = route.duration / 60;
+
+                const predictionResponse = await fetch(`${API_BASE_URL}/predict`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ distance_km: distance, num_stops: currentRoute.length, stop_ids: currentRoute.map(s => s.bus_stop_id) })
+                });
+                let passengers = 0, fuelCost = 0;
+                if (predictionResponse.ok) {
+                    const predictionData = await predictionResponse.json();
+                    passengers = predictionData.expected_passengers;
+                    fuelCost = predictionData.estimated_fuel_cost_inr;
+                }
+
+                // Update dashboard stats
+                document.getElementById('mobileValDuration').innerText = Math.round(duration) + ' min';
+                document.getElementById('mobileValDistance').innerText = distance.toFixed(1) + ' km';
+                document.getElementById('mobileValPassengers').innerText = passengers || '--';
+                document.getElementById('mobileValCost').innerText = '₹' + (fuelCost || '--');
+
+                // Update map view stats
+                document.getElementById('mobileMapDuration').innerText = Math.round(duration) + ' min';
+                document.getElementById('mobileMapDistance').innerText = distance.toFixed(1) + ' km';
+                document.getElementById('mobileMapPassengers').innerText = passengers || '--';
+                document.getElementById('mobileMapCost').innerText = '₹' + (fuelCost || '--');
+
+                // Show map & draw route
+                showMobileMapView();
+                updateMobileMap(route);
+                showToast("Route optimized!", 'success');
+
+            } catch (error) {
+                showToast("Optimization failed: " + error.message, 'error');
+            } finally {
+                mobileOptimizeBtn.disabled = false;
+                mobileOptimizeBtn.innerHTML = '<i class="ph ph-lightning text-2xl"></i> Optimize Route';
+            }
+        }
+
+        function updateMobileMap(route) {
+            if (mobileRouteLayer) mobileMap.removeLayer(mobileRouteLayer);
+            mobileMarkers.forEach(m => mobileMap.removeLayer(m));
+            mobileMarkers = [];
+
+            const routeGeometry = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+            mobileRouteLayer = L.polyline(routeGeometry, { color: '#2563eb', weight: 6, opacity: 0.8, lineJoin: 'round' }).addTo(mobileMap);
+
+            currentRoute.forEach((stop, index) => {
+                let color = '#3b82f6';
+                if (index === 0) color = '#22c55e';
+                else if (index === currentRoute.length - 1) color = '#ef4444';
+                const customIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.4);"></div>`,
+                    iconSize: [20, 20], iconAnchor: [10, 10]
+                });
+                const marker = L.marker([stop.lat, stop.lon], { icon: customIcon }).addTo(mobileMap).bindPopup(stop.name);
+                mobileMarkers.push(marker);
+            });
+            mobileMap.fitBounds(mobileRouteLayer.getBounds(), { padding: [50, 50] });
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -267,6 +621,11 @@
             routeListUl.addEventListener('click', handleRemoveStop);
             toggleStopsBtn.addEventListener('click', toggleAllStops);
             sidebarSearch.addEventListener('input', filterSidebarStops);
+            
+            // Mobile event listeners
+            setupMobileAutocomplete();
+            if (mobileAddStopBtn) mobileAddStopBtn.addEventListener('click', mobileAddStop);
+            if (mobileOptimizeBtn) mobileOptimizeBtn.addEventListener('click', mobileHandleOptimize);
         });
 
         // --- TOAST FUNCTION ---
