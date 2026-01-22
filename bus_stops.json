@@ -1,0 +1,146 @@
+[
+  {
+    "bus_stop_id": 1,
+    "name": "Aluva Stand",
+    "lat": 10.1102,
+    "lon": 76.3494,
+    "district": "Ernakulam",
+    "category": "transport_hub",
+    "demand_multiplier": 1.8
+  },
+  {
+    "bus_stop_id": 2,
+    "name": "Edappally",
+    "lat": 10.0261,
+    "lon": 76.3085,
+    "district": "Ernakulam",
+    "category": "commercial",
+    "demand_multiplier": 1.5
+  },
+  {
+    "bus_stop_id": 3,
+    "name": "Kaloor",
+    "lat": 9.9940,
+    "lon": 76.2917,
+    "district": "Ernakulam",
+    "category": "commercial",
+    "demand_multiplier": 1.4
+  },
+  {
+    "bus_stop_id": 4,
+    "name": "Vyttila Hub",
+    "lat": 9.9655,
+    "lon": 76.3217,
+    "district": "Ernakulam",
+    "category": "transport_hub",
+    "demand_multiplier": 2.0
+  },
+  {
+    "bus_stop_id": 5,
+    "name": "Fort Kochi",
+    "lat": 9.9658,
+    "lon": 76.2421,
+    "district": "Ernakulam",
+    "category": "tourist",
+    "demand_multiplier": 1.3
+  },
+  {
+    "bus_stop_id": 6,
+    "name": "Menaka",
+    "lat": 9.9765,
+    "lon": 76.2758,
+    "district": "Ernakulam",
+    "category": "regular",
+    "demand_multiplier": 1.0
+  },
+  {
+    "bus_stop_id": 7,
+    "name": "Palarivattom",
+    "lat": 10.0036,
+    "lon": 76.3056,
+    "district": "Ernakulam",
+    "category": "commercial",
+    "demand_multiplier": 1.4
+  },
+  {
+    "bus_stop_id": 8,
+    "name": "Thiruvananthapuram Central (Thampanoor)",
+    "lat": 8.4882,
+    "lon": 76.9526,
+    "district": "Thiruvananthapuram",
+    "category": "transport_hub",
+    "demand_multiplier": 2.0
+  },
+  {
+    "bus_stop_id": 9,
+    "name": "Trivandrum Intl Airport (T2)",
+    "lat": 8.4897,
+    "lon": 76.9215,
+    "district": "Thiruvananthapuram",
+    "category": "airport",
+    "demand_multiplier": 1.8
+  },
+  {
+    "bus_stop_id": 10,
+    "name": "Kollam KSRTC Station (Cutchery)",
+    "lat": 8.8879,
+    "lon": 76.5945,
+    "district": "Kollam",
+    "category": "transport_hub",
+    "demand_multiplier": 1.7
+  },
+  {
+    "bus_stop_id": 11,
+    "name": "Alappuzha KSRTC Terminal (Mullakkal)",
+    "lat": 9.4947,
+    "lon": 76.3313,
+    "district": "Alappuzha",
+    "category": "transport_hub",
+    "demand_multiplier": 1.6
+  },
+  {
+    "bus_stop_id": 12,
+    "name": "Ernakulam KSRTC Central (Shenoys)",
+    "lat": 9.9723,
+    "lon": 76.2863,
+    "district": "Ernakulam",
+    "category": "transport_hub",
+    "demand_multiplier": 2.0
+  },
+  {
+    "bus_stop_id": 13,
+    "name": "Cochin Intl Airport (T3 Bus Bay)",
+    "lat": 10.1558,
+    "lon": 76.3980,
+    "district": "Ernakulam",
+    "category": "airport",
+    "demand_multiplier": 1.8
+  },
+  {
+    "bus_stop_id": 14,
+    "name": "Kottayam KSRTC Stand",
+    "lat": 9.5856,
+    "lon": 76.5235,
+    "district": "Kottayam",
+    "category": "transport_hub",
+    "demand_multiplier": 1.7
+  },
+  {
+    "bus_stop_id": 15,
+    "name": "Kozhikode (Calicut City)",
+    "lat": 11.2588,
+    "lon": 75.7873,
+    "district": "Kozhikode",
+    "category": "major_city",
+    "demand_multiplier": 1.6
+  },
+  {
+    "bus_stop_id": 16,
+    "name": "Calicut Airport (Kondotty)",
+    "lat": 11.1432,
+    "lon": 75.9645,
+    "district": "Malappuram",
+    "category": "airport",
+    "demand_multiplier": 1.8
+  }
+]
