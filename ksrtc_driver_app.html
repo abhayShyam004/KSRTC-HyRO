@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KSRTC-HyRO Control Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/awesomplete@1.1.5/awesomplete.css" />
+    <script src="https://cdn.jsdelivr.net/npm/awesomplete@1.1.5/awesomplete.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        #map { height: 100%; width: 100%; z-index: 0; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .awesomplete { width: 100%; }
+        .awesomplete > ul { border-radius: 0.5rem; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 0; margin-top: 4px; }
+        .awesomplete > ul > li { padding: 8px 12px; font-size: 0.9rem; color: #374151; }
+        .awesomplete > ul > li:hover, .awesomplete > ul > li[aria-selected="true"] { background: #eff6ff; color: #1d4ed8; }
+        .sortable-ghost { opacity: 0.4; border: 2px dashed #3b82f6; background: #eff6ff; }
+        .drag-handle { cursor: grab; }
+        .drag-handle:active { cursor: grabbing; }
+    </style>
+</head>
+<body class="h-screen flex overflow-hidden text-gray-800 relative">
+
+    <aside class="w-96 bg-white shadow-xl z-20 flex flex-col border-r border-gray-200">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center space-x-3 bg-slate-50">
+            <div class="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200">
+                <i class="ph ph-bus text-white text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold text-gray-900 tracking-tight">KSRTC-HyRO</h1>
+                <p class="text-xs text-blue-600 font-medium uppercase tracking-wider">Route Optimizer</p>
+            </div>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-6 py-6 space-y-6">
+            <div>
+                <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Build Route</label>
+                <div class="relative">
+                    <input id="stopSearch" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition" placeholder="Search location (e.g. Aluva)..." disabled>
+                    <i class="ph ph-magnifying-glass absolute left-3.5 top-3.5 text-gray-400 text-lg"></i>
+                </div>
+                <button id="addStopBtn" class="mt-3 w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm rounded-lg transition duration-200 flex items-center justify-center gap-2" disabled>
+                    <i class="ph ph-map-pin text-lg"></i> Set Departure Point
+                </button>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Current Route Plan</label>
+                    <span id="stopCountBadge" class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">0 Stops</span>
+                </div>
+                <ul id="routeList" class="space-y-2 min-h-[100px]">
+                    <li class="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
+                        <p class="text-sm text-gray-400">Route is empty.</p>
+                        <p class="text-xs text-gray-400 mt-1">Add stops to begin.</p>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="p-6 border-t border-gray-100 bg-gray-50">
+             <button id="getRouteBtn" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition duration-300 flex items-center justify-center gap-2 transform active:scale-95">
+                <i class="ph ph-lightning text-xl"></i> Optimize Route
+            </button>
+            <p id="statusMsg" class="text-xs text-center text-gray-400 mt-3 font-medium">Ready to calculate</p>
+        </div>
+    </aside>
+
+    <aside id="stopsPanel" class="fixed right-0 top-0 h-full w-80 bg-white shadow-2xl z-30 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-gray-200">
+        <div class="px-5 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
+            <div>
+                <h3 class="font-bold text-gray-800">Network Stops</h3>
+                <p id="totalStopsCount" class="text-xs text-blue-600 font-medium">-- locations</p>
+            </div>
+            <button onclick="toggleAllStops()" class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-red-500 hover:border-red-200 transition shadow-sm">
+                <i class="ph ph-x"></i>
+            </button>
+        </div>
+        <div class="px-4 py-3 border-b border-gray-100">
+            <input id="sidebarSearch" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Filter list...">
+        </div>
+        <div class="flex-1 overflow-y-auto p-2 space-y-1" id="stopsList"></div>
+    </aside>
+
+    <main class="flex-1 relative flex flex-col transition-all duration-300" id="mainContent">
+        <div class="absolute top-4 right-4 z-10 flex flex-col items-end space-y-4 pointer-events-none">
+            <button id="toggleStopsBtn" class="pointer-events-auto bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold py-2.5 px-4 rounded-xl shadow-lg border border-gray-200 transition flex items-center gap-2">
+                <i class="ph ph-map-pin text-lg"></i> Show All Stops
+            </button>
+            <div id="metricsPanel" class="pointer-events-auto w-64 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 overflow-hidden transform transition-all duration-500 translate-x-10 opacity-0 relative">
+                <div class="bg-blue-600 px-5 py-3 flex items-center justify-between">
+                    <span class="text-white font-bold text-sm flex items-center gap-2"><i class="ph ph-chart-line-up"></i> Trip Summary</span>
+                    <button onclick="closeMetrics()" class="text-blue-200 hover:text-white transition"><i class="ph ph-x"></i></button>
+                </div>
+                <div class="p-2 space-y-1">
+                    <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
+                        <div class="h-10 w-10 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mr-4 shadow-sm"><i class="ph ph-clock text-xl"></i></div>
+                        <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Est. Duration</p><p id="valDuration" class="text-lg font-bold text-gray-800 leading-none mt-0.5">-- min</p></div>
+                    </div>
+                    <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
+                        <div class="h-10 w-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mr-4 shadow-sm"><i class="ph ph-path text-xl"></i></div>
+                        <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Total Distance</p><p id="valDistance" class="text-lg font-bold text-gray-800 leading-none mt-0.5">-- km</p></div>
+                    </div>
+                    <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
+                        <div class="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-4 shadow-sm"><i class="ph ph-users text-xl"></i></div>
+                        <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Passenger Demand</p><p id="valPassengers" class="text-lg font-bold text-gray-800 leading-none mt-0.5">~0</p></div>
+                    </div>
+                    <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
+                        <div class="h-10 w-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center mr-4 shadow-sm"><i class="ph ph-gas-pump text-xl"></i></div>
+                        <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Fuel Cost</p><p id="valCost" class="text-lg font-bold text-gray-800 leading-none mt-0.5">₹0</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="map" class="bg-gray-100 h-full w-full"></div>
+    </main>
+
+    <!-- TOAST CONTAINER -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-3 pointer-events-none"></div>
+
+    <script>
+        let busStops = [];
+        const stopSearchInput = document.getElementById('stopSearch');
+        const addStopBtn = document.getElementById('addStopBtn');
+        const routeListUl = document.getElementById('routeList');
+        const getRouteBtn = document.getElementById('getRouteBtn');
+        const toggleStopsBtn = document.getElementById('toggleStopsBtn');
+        const statusMsg = document.getElementById('statusMsg');
+        const stopCountBadge = document.getElementById('stopCountBadge');
+        const metricsPanel = document.getElementById('metricsPanel');
+        
+        const stopsPanel = document.getElementById('stopsPanel');
+        const stopsList = document.getElementById('stopsList');
+        const totalStopsCount = document.getElementById('totalStopsCount');
+        const sidebarSearch = document.getElementById('sidebarSearch');
+        const toastContainer = document.getElementById('toastContainer');
+        
+        let map;
+        let routeLayer;
+        let currentRoute = [];
+        let markers = [];
+        let awesomplete;
+        let allStopsLayer = null;
+        let areAllStopsVisible = false;
+
+        // --- API CONFIGURATION ---
+        // Auto-detect: localhost uses port 5001, production uses same origin
+        const API_BASE_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:5001' 
+            : '';  // Empty string means same origin on Render
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            initializeMap();
+            await loadBusStops();
+            setupAutocomplete();
+            setupDragAndDrop();
+            addStopBtn.addEventListener('click', addStopToRoute);
+            getRouteBtn.addEventListener('click', handleGetRoute);
+            routeListUl.addEventListener('click', handleRemoveStop);
+            toggleStopsBtn.addEventListener('click', toggleAllStops);
+            sidebarSearch.addEventListener('input', filterSidebarStops);
+        });
+
+        // --- TOAST FUNCTION ---
+        function showToast(message, type = 'error') {
+            const toast = document.createElement('div');
+            toast.className = `transform transition-all duration-300 translate-y-10 opacity-0 px-4 py-3 rounded-lg shadow-lg border-l-4 flex items-center gap-3 min-w-[300px] pointer-events-auto backdrop-blur-md`;
+            
+            let icon = 'ph-info';
+            let colors = 'bg-white border-blue-500 text-gray-800';
+            
+            if (type === 'error') {
+                colors = 'bg-white border-red-500 text-gray-800';
+                icon = 'ph-warning-circle text-red-500';
+            } else if (type === 'success') {
+                colors = 'bg-white border-green-500 text-gray-800';
+                icon = 'ph-check-circle text-green-500';
+            }
+
+            toast.innerHTML = `<i class="ph ${icon} text-lg"></i><p class="text-sm font-medium">${message}</p>`;
+            toast.classList.add(...colors.split(' '));
+            toastContainer.appendChild(toast);
+            requestAnimationFrame(() => toast.classList.remove('translate-y-10', 'opacity-0'));
+            setTimeout(() => {
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        async function loadBusStops() {
+            try {
+                // Cache Busting: Force fresh load of JSON
+                const response = await fetch(`/bus_stops.json?t=${Date.now()}`);
+                const data = await response.json();
+                busStops = data.sort((a, b) => a.name.localeCompare(b.name));
+                stopSearchInput.placeholder = "Type stop name...";
+                stopSearchInput.disabled = false;
+                addStopBtn.disabled = false;
+            } catch (error) {
+                console.error('Failed to load bus stops:', error);
+                showToast("Failed to load bus stops. Check console.", 'error');
+            }
+        }
+
+        function initializeMap() {
+            if (map) map.remove();
+            map = L.map('map', { zoomControl: false }).setView([9.9816, 76.2999], 12);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: 'OSM | CARTO', subdomains: 'abcd', maxZoom: 20
+            }).addTo(map);
+            L.control.zoom({ position: 'bottomright' }).addTo(map);
+        }
+
+        function setupAutocomplete() {
+            awesomplete = new Awesomplete(stopSearchInput, { 
+                list: busStops.map(s => s.name), minChars: 1, maxItems: 10
+            });
+        }
+
+        function setupDragAndDrop() {
+            new Sortable(routeListUl, {
+                animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost',
+                onEnd: function (evt) {
+                    const movedItem = currentRoute.splice(evt.oldIndex, 1)[0];
+                    currentRoute.splice(evt.newIndex, 0, movedItem);
+                    renderRouteList(); 
+                }
+            });
+        }
+
+        function toggleAllStops() {
+             if (!areAllStopsVisible) {
+                if (!allStopsLayer) { 
+                    const allMarkers = busStops.map(stop => {
+                        return L.circleMarker([stop.lat, stop.lon], {
+                            radius: 6, color: '#475569', weight: 2, fillColor: '#94a3b8', fillOpacity: 0.9
+                        }).bindTooltip(stop.name, { direction: 'top', offset: [0, -5] });
+                    });
+                    allStopsLayer = L.layerGroup(allMarkers);
+                }
+                map.addLayer(allStopsLayer);
+                toggleStopsBtn.innerHTML = '<i class="ph ph-eye-slash"></i> Hide Network Map';
+                toggleStopsBtn.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
+                stopsPanel.classList.remove('translate-x-full');
+                renderStopsSidebarList(busStops); 
+            } else {
+                if (allStopsLayer) map.removeLayer(allStopsLayer);
+                toggleStopsBtn.innerHTML = '<i class="ph ph-map-pin"></i> Show All Stops';
+                toggleStopsBtn.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
+                stopsPanel.classList.add('translate-x-full');
+            }
+            areAllStopsVisible = !areAllStopsVisible;
+        }
+
+        function renderStopsSidebarList(stopsToRender) {
+            stopsList.innerHTML = ''; 
+            totalStopsCount.innerText = `${stopsToRender.length} locations`;
+            
+            // Group by District
+            const grouped = stopsToRender.reduce((acc, stop) => {
+                const district = stop.district || 'Other';
+                if (!acc[district]) acc[district] = [];
+                acc[district].push(stop);
+                return acc;
+            }, {});
+
+            const fragment = document.createDocumentFragment();
+
+            // Geographic Order (North -> South)
+            const districtOrder = [
+                "Kasargod", "Kannur", "Wayanad", "Kozhikode", "Malappuram", "Palakkad", 
+                "Thrissur", "Ernakulam", "Idukki", "Kottayam", "Alappuzha", 
+                "Pathanamthitta", "Kollam", "Thiruvananthapuram"
+            ];
+
+            const sortedDistricts = Object.keys(grouped).sort((a, b) => {
+                let indexA = districtOrder.indexOf(a);
+                let indexB = districtOrder.indexOf(b);
+                // Put unknown districts at the end
+                if (indexA === -1) indexA = 999;
+                if (indexB === -1) indexB = 999;
+                return indexA - indexB;
+            });
+
+            sortedDistricts.forEach(district => {
+                // District Header
+                const header = document.createElement('div');
+                header.className = "px-2 py-1.5 mt-2 mb-1 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50";
+                header.innerText = district;
+                fragment.appendChild(header);
+
+                // Stops
+                grouped[district].forEach(stop => {
+                    const div = document.createElement('div');
+                    div.className = "p-3 mb-1 bg-white hover:bg-blue-50/30 rounded-lg border border-gray-100 hover:border-blue-200 transition group flex items-center justify-between";
+                    // Determine icon and badge based on category
+                    const isAirport = stop.category === 'airport' || stop.name.toLowerCase().includes('airport');
+                    const isHighDemand = (stop.demand_multiplier || 1) >= 1.7;
+                    const isCommercial = stop.category === 'commercial';
+                    
+                    // Icon styling
+                    let iconClass = 'ph-bus';
+                    let iconBg = 'bg-blue-100 text-blue-600';
+                    if (isAirport) { iconClass = 'ph-airplane-tilt'; iconBg = 'bg-purple-100 text-purple-600'; }
+                    else if (isHighDemand) { iconBg = 'bg-orange-100 text-orange-600'; }
+                    
+                    // Badge
+                    let badge = '';
+                    if (isAirport) {
+                        badge = '<span class="text-[10px] text-purple-500 font-medium tracking-wide flex items-center gap-1"><i class="ph ph-airplane text-[8px]"></i> Airport</span>';
+                    } else if (isHighDemand) {
+                        badge = '<span class="text-[10px] text-orange-500 font-medium tracking-wide flex items-center gap-1"><i class="ph ph-fire text-[8px]"></i> High Demand</span>';
+                    } else if (isCommercial) {
+                        badge = '<span class="text-[10px] text-blue-400 font-medium tracking-wide flex items-center gap-1"><i class="ph ph-storefront text-[8px]"></i> Commercial</span>';
+                    }
+                    
+                    div.innerHTML = `
+                        <div class="flex items-center gap-3 flex-1 cursor-pointer" onclick="map.flyTo([${stop.lat}, ${stop.lon}], 16, { animate: true, duration: 1.5 })">
+                            <div class="h-6 w-6 rounded-full ${iconBg} flex items-center justify-center text-xs">
+                                <i class="ph ${iconClass}"></i>
+                            </div>
+                            <div class="flex flex-col">
+                                <span class="text-sm font-medium text-gray-700 group-hover:text-blue-700 truncate max-w-[140px]">${stop.name}</span>
+                                ${badge}
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <button onclick="addStopToRouteFromSidebar(${stop.bus_stop_id})" class="h-7 w-7 rounded-md hover:bg-green-100 text-gray-400 hover:text-green-600 transition flex items-center justify-center" title="Add to Route">
+                                <i class="ph ph-plus-circle text-lg"></i>
+                            </button>
+                            <button onclick="map.flyTo([${stop.lat}, ${stop.lon}], 16, { animate: true, duration: 1.5 })" class="h-7 w-7 rounded-md hover:bg-blue-100 text-gray-400 hover:text-blue-600 transition flex items-center justify-center" title="Locate">
+                                <i class="ph ph-crosshair text-lg"></i>
+                            </button>
+                        </div>
+                    `;
+                    fragment.appendChild(div);
+                });
+            });
+            
+            stopsList.appendChild(fragment);
+        }
+
+        function filterSidebarStops(e) {
+            const query = e.target.value.toLowerCase();
+            const filtered = busStops.filter(s => s.name.toLowerCase().includes(query));
+            renderStopsSidebarList(filtered);
+        }
+
+        function addStopToRouteFromSidebar(stopId) {
+            const stop = busStops.find(s => s.bus_stop_id === stopId);
+            if (stop) addStopToRoute(stop);
+        }
+
+        function addStopToRoute(directStop = null) {
+            // Handle Direct Call or Input Search
+            // If called by event listener, directStop is a MouseEvent, so we must check for that.
+            let stop = (directStop && directStop.bus_stop_id) ? directStop : null;
+            
+            if (!stop) {
+                // If not direct, look at input
+                const stopName = stopSearchInput.value;
+                if (!stopName) { showToast("Please enter a location name", 'error'); return; }
+                stop = busStops.find(s => s.name === stopName);
+            }
+
+            // Validation
+            if (!stop) { showToast("Stop not found. Please select from the list.", 'error'); return; }
+            if (currentRoute.find(r => r.bus_stop_id === stop.bus_stop_id)) {
+                showToast("This stop is already in your route.", 'error'); return; // Toast exists now
+            }
+
+            currentRoute.push(stop);
+            renderRouteList();
+            stopSearchInput.value = '';
+            showToast(`${stop.name} added to route`, 'success');
+        }
+
+        function handleRemoveStop(event) {
+            const removeButton = event.target.closest('.remove-btn');
+            if (removeButton) {
+                const stopId = parseInt(removeButton.dataset.id);
+                currentRoute = currentRoute.filter(s => s.bus_stop_id !== stopId);
+                renderRouteList();
+            }
+        }
+
+        function renderRouteList() {
+            routeListUl.innerHTML = '';
+            stopCountBadge.textContent = `${currentRoute.length} Stops`;
+            if (currentRoute.length === 0) {
+                addStopBtn.innerHTML = '<i class="ph ph-map-pin text-lg"></i> Set Departure Point';
+                addStopBtn.classList.replace('text-gray-700', 'text-blue-700');
+                addStopBtn.classList.replace('bg-gray-100', 'bg-blue-50');
+                routeListUl.innerHTML = `<li class="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl"><p class="text-sm text-gray-400">Route is empty.</p><p class="text-xs text-gray-400 mt-1">Add stops to begin.</p></li>`;
+                statusMsg.textContent = "Ready to build route";
+                closeMetrics();
+                if(routeLayer) map.removeLayer(routeLayer);
+                markers.forEach(m => map.removeLayer(m));
+                markers = [];
+                return;
+            } else {
+                addStopBtn.innerHTML = '<i class="ph ph-plus-circle text-lg"></i> Add Stop / Destination';
+                addStopBtn.classList.replace('text-blue-700', 'text-gray-700');
+                addStopBtn.classList.replace('bg-blue-50', 'bg-gray-100');
+            }
+
+            currentRoute.forEach((stop, index) => {
+                const li = document.createElement('li');
+                li.className = 'group flex items-center p-3 bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-md transition-shadow relative';
+                let dotClass="bg-gray-200", label="Waypoint";
+                if (index===0) { dotClass="bg-green-500"; label="START"; }
+                else if (index===currentRoute.length-1) { dotClass="bg-red-500"; label="END"; }
+                li.innerHTML = `
+                    <div class="drag-handle p-2 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing"><i class="ph ph-dots-six-vertical text-lg"></i></div>
+                    <div class="flex-1 ml-1"><div class="flex items-center gap-2 mb-0.5"><span class="w-2 h-2 rounded-full ${dotClass}"></span><span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">${label}</span></div><h4 class="text-sm font-semibold text-gray-800">${stop.name}</h4></div>
+                    <button data-id="${stop.bus_stop_id}" class="remove-btn p-2 text-gray-300 hover:text-red-500 transition opacity-0 group-hover:opacity-100"><i class="ph ph-trash text-lg"></i></button>
+                `;
+                routeListUl.appendChild(li);
+            });
+        }
+        
+        async function handleGetRoute() {
+            if (currentRoute.length < 2) { showToast("Please add at least 2 stops to calculate a route.", 'error'); return; } 
+            
+            // Auto-retract sidebar if open
+            if (areAllStopsVisible) toggleAllStops();
+            
+            getRouteBtn.disabled = true;
+            getRouteBtn.innerHTML = '<i class="ph ph-spinner animate-spin text-xl"></i> Optimizing...';
+            statusMsg.textContent = "Calculating best path...";
+            
+            // Switch back to Global Demo Server (approx 5 decimal places for precision)
+            const coords = currentRoute.map(stop => `${stop.lon.toFixed(5)},${stop.lat.toFixed(5)}`).join(';');
+            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson&overview=full`;
+            console.log("DEBUG: OSRM URL:", osrmUrl);
+            console.log("DEBUG: Stops:", currentRoute.map(s => `${s.name} (${s.lat}, ${s.lon})`));
+
+            try {
+                const osrmResponse = await fetch(osrmUrl);
+                if (!osrmResponse.ok) throw new Error('OSRM Routing Failed');
+                const routeData = await osrmResponse.json();
+                if (!routeData.routes || routeData.routes.length === 0) throw new Error('No route found');
+                const route = routeData.routes[0];
+                const distance = route.distance / 1000;
+                const duration = route.duration / 60;
+
+                const predictionResponse = await fetch(`${API_BASE_URL}/predict`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        distance_km: distance, 
+                        num_stops: currentRoute.length,
+                        stop_ids: currentRoute.map(stop => stop.bus_stop_id)
+                    })
+                });
+                let passengers = 0, fuelCost = 0, highDemandStops = [];
+                if (predictionResponse.ok) {
+                    const predictionData = await predictionResponse.json();
+                    passengers = predictionData.expected_passengers;
+                    fuelCost = predictionData.estimated_fuel_cost_inr;
+                    highDemandStops = predictionData.high_demand_stops || [];
+                }
+
+                document.getElementById('valDuration').innerText = Math.round(duration) + " min";
+                document.getElementById('valDistance').innerText = distance.toFixed(1) + " km";
+                document.getElementById('valPassengers').innerText = passengers || "--";
+                document.getElementById('valCost').innerText = "₹" + (fuelCost || "--");
+                
+                openMetrics();
+                updateMap(route);
+                statusMsg.textContent = "Route optimized successfully";
+                statusMsg.className = "text-xs text-center text-green-600 mt-3 font-medium";
+                showToast("Route optimized successfully!", 'success'); // ADDED SUCCESS TOAST
+            } catch (error) {
+                statusMsg.textContent = "Optimization failed: " + error.message;
+                statusMsg.className = "text-xs text-center text-red-500 mt-3 font-medium";
+                showToast("Optimization failed. Check internet/backend.", 'error'); // ADDED ERROR TOAST
+            } finally {
+                getRouteBtn.disabled = false;
+                getRouteBtn.innerHTML = '<i class="ph ph-lightning text-xl"></i> Optimize Route';
+            }
+        }
+
+        function updateMap(route) {
+            if (routeLayer) map.removeLayer(routeLayer);
+            markers.forEach(marker => map.removeLayer(marker));
+            markers = [];
+            const routeGeometry = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+            routeLayer = L.polyline(routeGeometry, { color: '#2563eb', weight: 6, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+            currentRoute.forEach((stop, index) => {
+                let color = '#3b82f6';
+                if (index === 0) color = '#22c55e';
+                else if (index === currentRoute.length - 1) color = '#ef4444';
+                const customIcon = L.divIcon({
+                    className: 'custom-div-icon',
+                    html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.4);"></div>`,
+                    iconSize: [20, 20], iconAnchor: [10, 10], popupAnchor: [0, -10]
+                });
+                const marker = L.marker([stop.lat, stop.lon], { icon: customIcon })
+                    .addTo(map)
+                    .bindPopup(`<b class="font-sans text-sm">${stop.name}</b><br><span class="text-xs text-gray-500">${stop.lat.toFixed(4)}, ${stop.lon.toFixed(4)}</span>`);
+                markers.push(marker);
+            });
+            map.fitBounds(routeLayer.getBounds(), { padding: [200, 50] }); 
+        }
+
+        function openMetrics() { metricsPanel.classList.remove('opacity-0', 'translate-x-10'); }
+        function closeMetrics() { metricsPanel.classList.add('opacity-0', 'translate-x-10'); }
+    </script>
+</body>
+</html>
