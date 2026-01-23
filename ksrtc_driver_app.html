@@ -702,16 +702,32 @@
 
         async function loadBusStops() {
             try {
-                // Cache Busting: Force fresh load of JSON
-                const response = await fetch(`/bus_stops.json?t=${Date.now()}`);
+                // Try live database first
+                const response = await fetch('/api/stops');
+                if (!response.ok) throw new Error('API unavailable');
                 const data = await response.json();
                 busStops = data.sort((a, b) => a.name.localeCompare(b.name));
-                stopSearchInput.placeholder = "Type stop name...";
+                console.log(`[INFO] Loaded ${busStops.length} stops from Database.`);
+                stopSearchInput.placeholder = "Search bus stop...";
                 stopSearchInput.disabled = false;
                 addStopBtn.disabled = false;
             } catch (error) {
-                console.error('Failed to load bus stops:', error);
-                showToast("Failed to load bus stops. Check console.", 'error');
+                console.warn('API error, falling back to JSON:', error);
+                
+                // Fallback to static JSON
+                try {
+                    const response = await fetch(`/bus_stops.json?t=${Date.now()}`);
+                    const data = await response.json();
+                    busStops = data.sort((a, b) => a.name.localeCompare(b.name));
+                    console.log(`[INFO] Loaded ${busStops.length} stops from JSON fallback.`);
+                    showToast("Offline Mode: New stops may not appear.", 'error');
+                    stopSearchInput.placeholder = "Search bus stop (Offline)...";
+                    stopSearchInput.disabled = false;
+                    addStopBtn.disabled = false;
+                } catch (jsonError) {
+                    console.error('Critical: Failed to load stops entirely:', jsonError);
+                    showToast("Failed to load map data.", 'error');
+                }
             }
         }
 
