@@ -1,10 +1,16 @@
+import sys
+import os
+
+# CONFIG: Ensure local modules are found
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+sys.path.append(BASE_DIR)
+
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import joblib
 import pandas as pd
 import datetime
 import json
-import os
 
 # Import database module
 try:
@@ -15,16 +21,16 @@ try:
         get_analytics_summary
     )
     DB_AVAILABLE = True
-except ImportError:
-    print("[WARN] Database module not found. Using JSON fallback.")
+except ImportError as e:
+    print(f"[WARN] Database module not found: {e}. Using JSON fallback.")
     DB_AVAILABLE = False
 
 # Import authentication module
 try:
     from auth import register_auth_routes, token_required, admin_required
     AUTH_AVAILABLE = True
-except ImportError:
-    print("[WARN] Auth module not found. Admin routes unprotected.")
+except ImportError as e:
+    print(f"[WARN] Auth module not found: {e}. Admin routes unprotected.")
     AUTH_AVAILABLE = False
     # Create dummy decorators
     def token_required(f): return f
@@ -34,8 +40,8 @@ except ImportError:
 try:
     from route_profitability import get_route_recommendations, calculate_route_profitability
     ROUTE_ML_AVAILABLE = True
-except ImportError:
-    print("[WARN] Route profitability model not found.")
+except ImportError as e:
+    print(f"[WARN] Route profitability model not found: {e}.")
     ROUTE_ML_AVAILABLE = False
 
 # --- CONFIGURATION ---
