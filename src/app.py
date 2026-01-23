@@ -19,6 +19,17 @@ except ImportError:
     print("[WARN] Database module not found. Using JSON fallback.")
     DB_AVAILABLE = False
 
+# Import authentication module
+try:
+    from auth import register_auth_routes, token_required, admin_required
+    AUTH_AVAILABLE = True
+except ImportError:
+    print("[WARN] Auth module not found. Admin routes unprotected.")
+    AUTH_AVAILABLE = False
+    # Create dummy decorators
+    def token_required(f): return f
+    def admin_required(f): return f
+
 # --- CONFIGURATION ---
 # Get the directory where app.py is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -46,6 +57,11 @@ if DB_AVAILABLE:
     except Exception as e:
         print(f"[ERROR] Database initialization failed: {e}")
         DB_AVAILABLE = False
+
+# Register authentication routes
+if AUTH_AVAILABLE:
+    register_auth_routes(app)
+    print("[OK] Authentication routes registered.")
 
 # Load the trained model
 try:
@@ -180,6 +196,7 @@ def api_get_stops():
         return jsonify(list(bus_stops_data.values()))
 
 @app.route('/api/stops', methods=['POST'])
+@token_required
 def api_create_stop():
     """Create a new bus stop"""
     if not DB_AVAILABLE:
@@ -197,6 +214,7 @@ def api_create_stop():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/stops/<int:stop_id>', methods=['PUT'])
+@token_required
 def api_update_stop(stop_id):
     """Update a bus stop"""
     if not DB_AVAILABLE:
@@ -216,6 +234,7 @@ def api_update_stop(stop_id):
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/stops/<int:stop_id>', methods=['DELETE'])
+@token_required
 def api_delete_stop(stop_id):
     """Delete a bus stop"""
     if not DB_AVAILABLE:
@@ -232,6 +251,7 @@ def api_delete_stop(stop_id):
 
 # ========== API: SETTINGS ==========
 @app.route('/api/settings', methods=['GET'])
+@token_required
 def api_get_settings():
     """Get all settings"""
     if not DB_AVAILABLE:
@@ -248,6 +268,7 @@ def api_get_settings():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/settings', methods=['PUT'])
+@token_required
 def api_update_settings():
     """Update multiple settings"""
     if not DB_AVAILABLE:
@@ -264,6 +285,7 @@ def api_update_settings():
 
 # ========== API: USERS ==========
 @app.route('/api/users', methods=['GET'])
+@token_required
 def api_get_users():
     """Get all users"""
     if not DB_AVAILABLE:
@@ -276,6 +298,7 @@ def api_get_users():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/users', methods=['POST'])
+@token_required
 def api_create_user():
     """Create a new user"""
     if not DB_AVAILABLE:
@@ -289,6 +312,7 @@ def api_create_user():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/users/<int:user_id>', methods=['DELETE'])
+@token_required
 def api_delete_user(user_id):
     """Delete a user"""
     if not DB_AVAILABLE:
@@ -304,6 +328,7 @@ def api_delete_user(user_id):
 
 # ========== API: ANALYTICS ==========
 @app.route('/api/analytics', methods=['GET'])
+@token_required
 def api_get_analytics():
     """Get analytics summary"""
     if not DB_AVAILABLE:

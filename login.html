@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KSRTC-HyRO Admin | Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.5s ease-out; }
+        .glow { box-shadow: 0 0 40px rgba(59, 130, 246, 0.3); }
+        .shake { animation: shake 0.5s; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
+
+    <!-- Background Pattern -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-20 left-20 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl"></div>
+        <div class="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl"></div>
+    </div>
+
+    <!-- Login Card -->
+    <div class="relative w-full max-w-md fade-in">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <div class="inline-flex items-center justify-center h-16 w-16 bg-blue-600 rounded-2xl shadow-2xl glow mb-4">
+                <i class="ph ph-bus text-white text-3xl"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-white">KSRTC-HyRO</h1>
+            <p class="text-blue-300 text-sm mt-1">Admin Control Center</p>
+        </div>
+
+        <!-- Card -->
+        <div id="loginCard" class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl">
+            <h2 class="text-xl font-bold text-white mb-2">Welcome Back</h2>
+            <p class="text-slate-400 text-sm mb-6">Enter your credentials to access the admin panel</p>
+
+            <!-- Error Message -->
+            <div id="errorMsg" class="hidden bg-red-500/20 border border-red-500/50 text-red-300 px-4 py-3 rounded-xl mb-4 text-sm flex items-center gap-2">
+                <i class="ph ph-warning-circle text-lg"></i>
+                <span id="errorText">Invalid credentials</span>
+            </div>
+
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <!-- Username -->
+                <div class="mb-4">
+                    <label class="block text-slate-300 text-sm font-medium mb-2">Username</label>
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="username" 
+                            class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-11 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="Enter your username"
+                            required
+                            autocomplete="username"
+                        >
+                        <i class="ph ph-user absolute left-4 top-3.5 text-slate-400 text-lg"></i>
+                    </div>
+                </div>
+
+                <!-- Password -->
+                <div class="mb-6">
+                    <label class="block text-slate-300 text-sm font-medium mb-2">Password</label>
+                    <div class="relative">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pl-11 pr-11 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition"
+                            placeholder="Enter your password"
+                            required
+                            autocomplete="current-password"
+                        >
+                        <i class="ph ph-lock absolute left-4 top-3.5 text-slate-400 text-lg"></i>
+                        <button type="button" onclick="togglePassword()" class="absolute right-4 top-3.5 text-slate-400 hover:text-white transition">
+                            <i id="eyeIcon" class="ph ph-eye text-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember Me -->
+                <div class="flex items-center justify-between mb-6">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" id="remember" class="w-4 h-4 rounded bg-white/10 border-white/20 text-blue-600 focus:ring-blue-500">
+                        <span class="text-slate-400 text-sm">Remember me</span>
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <button 
+                    type="submit" 
+                    id="loginBtn"
+                    class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold py-3.5 rounded-xl transition duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30"
+                >
+                    <span id="btnText">Sign In</span>
+                    <i id="btnIcon" class="ph ph-arrow-right text-lg"></i>
+                    <i id="btnSpinner" class="ph ph-spinner animate-spin text-lg hidden"></i>
+                </button>
+            </form>
+
+            <!-- Back to App -->
+            <div class="mt-6 text-center">
+                <a href="/" class="text-slate-400 hover:text-white text-sm transition flex items-center justify-center gap-2">
+                    <i class="ph ph-arrow-left"></i> Back to Route Optimizer
+                </a>
+            </div>
+        </div>
+
+        <!-- Security Notice -->
+        <p class="text-center text-slate-500 text-xs mt-6">
+            <i class="ph ph-shield-check"></i> Secure login with JWT authentication
+        </p>
+    </div>
+
+    <script>
+        // Check if already logged in
+        const token = localStorage.getItem('admin_token');
+        if (token) {
+            // Verify token is still valid
+            fetch('/api/auth/verify', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.valid) {
+                    window.location.href = '/admin.html';
+                } else {
+                    localStorage.removeItem('admin_token');
+                }
+            })
+            .catch(() => localStorage.removeItem('admin_token'));
+        }
+
+        function togglePassword() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('ph-eye');
+                icon.classList.add('ph-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('ph-eye-slash');
+                icon.classList.add('ph-eye');
+            }
+        }
+
+        function showError(message) {
+            const errorMsg = document.getElementById('errorMsg');
+            const errorText = document.getElementById('errorText');
+            const card = document.getElementById('loginCard');
+            
+            errorText.textContent = message;
+            errorMsg.classList.remove('hidden');
+            card.classList.add('shake');
+            
+            setTimeout(() => card.classList.remove('shake'), 500);
+        }
+
+        function setLoading(isLoading) {
+            const btn = document.getElementById('loginBtn');
+            const btnText = document.getElementById('btnText');
+            const btnIcon = document.getElementById('btnIcon');
+            const btnSpinner = document.getElementById('btnSpinner');
+            
+            btn.disabled = isLoading;
+            if (isLoading) {
+                btnText.textContent = 'Signing in...';
+                btnIcon.classList.add('hidden');
+                btnSpinner.classList.remove('hidden');
+            } else {
+                btnText.textContent = 'Sign In';
+                btnIcon.classList.remove('hidden');
+                btnSpinner.classList.add('hidden');
+            }
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            const remember = document.getElementById('remember').checked;
+            
+            if (!username || !password) {
+                showError('Please fill in all fields');
+                return;
+            }
+
+            setLoading(true);
+            document.getElementById('errorMsg').classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    // Store token
+                    localStorage.setItem('admin_token', data.token);
+                    localStorage.setItem('admin_user', JSON.stringify(data.user));
+                    
+                    if (remember) {
+                        localStorage.setItem('remember_admin', 'true');
+                    }
+
+                    // Redirect to admin panel
+                    window.location.href = '/admin.html';
+                } else {
+                    showError(data.error || 'Invalid credentials');
+                    setLoading(false);
+                }
+            } catch (error) {
+                showError('Connection error. Please try again.');
+                setLoading(false);
+            }
+        }
+    </script>
+</body>
+</html>
