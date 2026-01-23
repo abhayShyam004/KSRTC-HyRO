@@ -4,6 +4,7 @@ Handles PostgreSQL connection and CRUD operations
 """
 import os
 import psycopg2
+import psycopg2.extras
 from psycopg2.extras import RealDictCursor
 from contextlib import contextmanager
 
@@ -94,9 +95,49 @@ def init_database():
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             ''')
+
+            # ML Training Data Table
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS demand_history (
+                    id SERIAL PRIMARY KEY,
+                    stop_id INTEGER,
+                    timestamp TIMESTAMP,
+                    day_of_week INTEGER, -- 0-6 (Mon-Sun)
+                    hour_of_day INTEGER, -- 0-23
+                    is_peak BOOLEAN,
+                    passenger_count INTEGER,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            ''')
             
             conn.commit()
             print("[OK] Database tables initialized successfully.")
+
+# ========== ML DATA LOGGING ==========
+def log_demand_batch(data_list):
+    """Batch insert training data"""
+    # data_list = [(stop_id, timestamp, dow, hour, is_peak, count), ...]
+    with get_db_connection() as conn:
+        with conn.cursor() as cur:
+            psycopg2.extras.execute_values(
+                cur,
+                '''INSERT INTO demand_history 
+                   (stop_id, timestamp, day_of_week, hour_of_day, is_peak, passenger_count) 
+                   VALUES %s''',
+                data_list
+            )
+            conn.commit()
+
+def get_training_data():
+    """Fetch all demand history for training"""
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            # Include stop_id to allow normalization
+            cur.execute('''
+                SELECT stop_id, day_of_week, hour_of_day, is_peak, passenger_count 
+                FROM demand_history
+            ''')
+            return cur.fetchall()
 
 def seed_default_data():
     """Insert default data if tables are empty"""
@@ -168,7 +209,7 @@ def seed_default_data():
                 cur.execute('''
                     INSERT INTO users (name, email, password_hash, role, status)
                     VALUES (%s, %s, %s, %s, %s)
-                ''', ('Admin User', 'admin@ksrtc.com', 'admin123', 'super_admin', 'active'))
+                ''', ('Admin User', 'admin@Hyro', 'admin123', 'super_admin', 'active'))
                 
                 conn.commit()
                 print("[OK] Seeded default admin user.")
