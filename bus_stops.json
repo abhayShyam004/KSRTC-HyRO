@@ -20,7 +20,7 @@
   {
     "bus_stop_id": 3,
     "name": "Kaloor",
-    "lat": 9.9940,
+    "lat": 9.994,
     "lon": 76.2917,
     "district": "Ernakulam",
     "category": "commercial",
@@ -111,7 +111,7 @@
     "bus_stop_id": 13,
     "name": "Cochin Intl Airport (T3 Bus Bay)",
     "lat": 10.1558,
-    "lon": 76.3980,
+    "lon": 76.398,
     "district": "Ernakulam",
     "category": "airport",
     "demand_multiplier": 1.8
@@ -142,5 +142,14 @@
     "district": "Malappuram",
     "category": "airport",
     "demand_multiplier": 1.8
+  },
+  {
+    "bus_stop_id": 17,
+    "name": "vadagara New bus stand",
+    "lat": 11.608495,
+    "lon": 75.5917092,
+    "district": "Kozhikode",
+    "category": "transport_hub",
+    "demand_multiplier": 2.0
   }
 ]

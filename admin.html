@@ -8,6 +8,8 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -22,6 +24,13 @@
         .table-row:hover { background: #f8fafc; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.3s ease-out; }
+        .stop-badge { display: inline-block; font-size: 9px; padding: 2px 6px; border-radius: 4px; margin-left: 6px; font-weight: 600; }
+        .stop-badge.airport { background: #f3e8ff; color: #7c3aed; }
+        .stop-badge.high-demand { background: #ffedd5; color: #ea580c; }
+        .stop-badge.commercial { background: #dbeafe; color: #2563eb; }
+        /* Map Picker Styles */
+        #pickerMap { z-index: 1;cursor: crosshair; }
+        .leaflet-container { font-family: 'Inter', sans-serif !important; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 min-h-screen flex">
@@ -78,6 +87,12 @@
                 <p class="text-gray-500 text-sm mt-1">Real-time insights into your fleet operations</p>
             </div>
             <div class="flex items-center gap-4">
+                <!-- Status Indicator -->
+                <div id="dbStatusBadge" class="hidden px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-2 bg-gray-100 text-gray-500 border border-gray-200" title="Checking database connection...">
+                    <span class="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></span>
+                    <span id="dbStatusText">Checking...</span>
+                </div>
+                
                 <div class="relative">
                     <input type="text" placeholder="Search..." class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64 shadow-sm">
                     <i class="ph ph-magnifying-glass absolute left-3.5 top-3 text-gray-400"></i>
@@ -334,8 +349,8 @@
     </main>
 
     <!-- ========== ADD STOP MODAL ========== -->
-    <div id="addStopModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden items-center justify-center">
-        <div class="bg-white rounded-2xl p-6 w-full max-w-md border border-gray-200 shadow-2xl">
+    <div id="addStopModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-4xl border border-gray-200 shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto">
             <div class="flex items-center justify-between mb-6">
                 <h3 class="text-xl font-bold text-gray-900">Add New Stop</h3>
                 <button onclick="closeAddStopModal()" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-xl"></i></button>
@@ -348,12 +363,17 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm text-gray-600 font-medium mb-2">Latitude</label>
-                        <input type="number" id="newStopLat" step="0.0001" placeholder="9.9312" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" id="newStopLat" step="0.0001" placeholder="Click on map or type" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
                         <label class="block text-sm text-gray-600 font-medium mb-2">Longitude</label>
-                        <input type="number" id="newStopLon" step="0.0001" placeholder="76.2673" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <input type="number" id="newStopLon" step="0.0001" placeholder="Click on map or type" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
+                </div>
+                <!-- Map Picker Container -->
+                <div class="rounded-xl overflow-hidden border border-gray-200 shadow-sm relative">
+                    <div id="pickerMap" class="h-96 w-full bg-slate-100"></div>
+                     <div class="absolute bottom-2 left-2 bg-white/90 px-2 py-1 rounded text-[10px] text-gray-500 shadow z-[500]">Click to select location</div>
                 </div>
                 <div>
                     <label class="block text-sm text-gray-600 font-medium mb-2">District</label>
@@ -527,9 +547,53 @@
             document.getElementById('sectionTitle').textContent = titles[section];
         }
 
-        // Modals
-        function openAddStopModal() { document.getElementById('addStopModal').classList.remove('hidden'); document.getElementById('addStopModal').classList.add('flex'); }
-        function closeAddStopModal() { document.getElementById('addStopModal').classList.add('hidden'); document.getElementById('addStopModal').classList.remove('flex'); }
+        // Modals & Map Picker
+        let pickerMap = null;
+        let pickerMarker = null;
+
+        function openAddStopModal() { 
+            document.getElementById('addStopModal').classList.remove('hidden'); 
+            document.getElementById('addStopModal').classList.add('flex'); 
+            
+            // Initialize map after short delay
+            setTimeout(initPickerMap, 200);
+        }
+
+        function initPickerMap() {
+            if (pickerMap) {
+                pickerMap.invalidateSize();
+                return;
+            }
+            
+            // Default center: Ernakulam (approx)
+            pickerMap = L.map('pickerMap').setView([9.9816, 76.2999], 10);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap'
+            }).addTo(pickerMap);
+            
+            // Add click handler
+            pickerMap.on('click', function(e) {
+                const lat = e.latlng.lat.toFixed(5);
+                const lon = e.latlng.lng.toFixed(5);
+                
+                // Update inputs
+                document.getElementById('newStopLat').value = lat;
+                document.getElementById('newStopLon').value = lon;
+                
+                // Update or add marker
+                if (pickerMarker) {
+                    pickerMarker.setLatLng(e.latlng);
+                } else {
+                    pickerMarker = L.marker(e.latlng).addTo(pickerMap);
+                }
+            });
+        }
+
+        function closeAddStopModal() { 
+            document.getElementById('addStopModal').classList.add('hidden'); 
+            document.getElementById('addStopModal').classList.remove('flex'); 
+        }
 
         // Toast
         function showToast(message) {
@@ -656,7 +720,35 @@
             });
         }
 
+        async function checkDbStatus() {
+            try {
+                const badge = document.getElementById('dbStatusBadge');
+                const text = document.getElementById('dbStatusText');
+                const dot = badge.querySelector('span');
+                
+                badge.classList.remove('hidden');
+                
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                
+                if (data.status === 'online' && data.db_available) {
+                    // Online (Green)
+                    badge.className = "px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200";
+                    dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-none";
+                    text.innerText = "Cloud DB Online";
+                } else {
+                    // Offline (Orange)
+                    badge.className = "px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-2 bg-orange-50 text-orange-700 border border-orange-200";
+                    dot.className = "w-2 h-2 rounded-full bg-orange-500 animate-none";
+                    text.innerText = "Offline Mode (Local)";
+                }
+            } catch (e) {
+                console.error("Status check failed", e);
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            checkDbStatus(); // Check status on load
             loadStops();
             loadAnalytics();
             initCharts();

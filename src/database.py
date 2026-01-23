@@ -8,6 +8,7 @@ from psycopg2.extras import RealDictCursor
 from contextlib import contextmanager
 
 # Database URL from environment variable or default
+# Reverting to direct host to rule out pooler DNS issues
 DATABASE_URL = os.environ.get('DATABASE_URL', 
     'postgresql://neondb_owner:npg_0R7oaXzqeYQK@ep-long-breeze-a1vczx8s.ap-southeast-1.aws.neon.tech/neondb?sslmode=require')
 
@@ -16,8 +17,14 @@ def get_db_connection():
     """Get a database connection with context manager for auto-cleanup"""
     conn = None
     try:
-        conn = psycopg2.connect(DATABASE_URL)
+        # Increased timeout to 30s for slower networks
+        conn = psycopg2.connect(DATABASE_URL, connect_timeout=30)
         yield conn
+    except psycopg2.OperationalError as e:
+        print(f"[ERROR] Database connection failed: {e}")
+        if "translate host name" in str(e):
+             print("[TIP] DNS FAILURE. Your computer cannot find the database address.")
+        raise
     finally:
         if conn:
             conn.close()

@@ -1,0 +1,9 @@
+@echo off
+call .venv\Scripts\activate
+echo Generating OSM Dataset...
+python src/generate_from_osm.py
+echo Training Demand Model...
+python src/train_demand_model.py
+echo Extracting Bus Stops...
+python src/extract_bus_stops.py
+echo Data Prep Complete > data_prep_done.txt

@@ -204,15 +204,18 @@ def api_get_stops():
         return jsonify(list(bus_stops_data.values()))
 
 # Import demand logic
-from demand_logic import calculate_demand_multiplier
+try:
+    from demand_logic import calculate_demand_multiplier
+    DEMAND_LOGIC_AVAILABLE = True
+except ImportError:
+    print("[WARN] Demand logic module not found. Using fallback.")
+    DEMAND_LOGIC_AVAILABLE = False
+    def calculate_demand_multiplier(cat, dist, lat, lon): return 1.0
 
 @app.route('/api/stops', methods=['POST'])
 @token_required
 def api_create_stop():
     """Create a new bus stop with auto-calculated demand"""
-    if not DB_AVAILABLE:
-        return jsonify({'error': 'Database not available'}), 503
-    
     data = request.get_json()
     
     # Input Validation
@@ -221,7 +224,42 @@ def api_create_stop():
     
     if missing_fields:
         return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
-        
+
+    # Offline/JSON Fallback Mode
+    if not DB_AVAILABLE:
+        try:
+            # Generate new ID (max + 1)
+            new_id = max([int(k) for k in bus_stops_data.keys()] or [0]) + 1
+            
+            # Calculate multiplier
+            multiplier = calculate_demand_multiplier(
+                data['category'], data['district'], data['lat'], data['lon']
+            )
+            
+            new_stop = {
+                'bus_stop_id': new_id,
+                'name': data['name'],
+                'lat': data['lat'],
+                'lon': data['lon'],
+                'district': data['district'],
+                'category': data['category'],
+                'demand_multiplier': multiplier
+            }
+            
+            # Update cache and save to file
+            bus_stops_data[new_id] = new_stop
+            with open(BUS_STOPS_PATH, 'w') as f:
+                json.dump(list(bus_stops_data.values()), f, indent=2)
+                
+            print(f"[INFO] New stop added to JSON (Offline Mode): {new_stop['name']}")
+            return jsonify(new_stop), 201
+        except Exception as e:
+            return jsonify({'error': f"Offline save failed: {str(e)}"}), 500
+
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 503
+    
+    # DB Mode continues...
     try:
         # Calculate demand multiplier automatically
         multiplier = calculate_demand_multiplier(
@@ -248,10 +286,41 @@ def api_create_stop():
 @token_required
 def api_update_stop(stop_id):
     """Update a bus stop and recalculate demand if needed"""
+    data = request.get_json()
+    
+    # Offline/JSON Fallback Mode
+    if not DB_AVAILABLE:
+        if stop_id not in bus_stops_data:
+            return jsonify({'error': 'Stop not found'}), 404
+            
+        try:
+            stop = bus_stops_data[stop_id]
+            multiplier = calculate_demand_multiplier(
+                data.get('category', stop['category']), 
+                data.get('district', stop['district']), 
+                data.get('lat', stop['lat']), 
+                data.get('lon', stop['lon'])
+            )
+            
+            stop['name'] = data['name']
+            stop['lat'] = data['lat']
+            stop['lon'] = data['lon']
+            stop['district'] = data['district']
+            stop['category'] = data.get('category', stop['category'])
+            stop['demand_multiplier'] = multiplier
+            
+            # Save to file
+            with open(BUS_STOPS_PATH, 'w') as f:
+                json.dump(list(bus_stops_data.values()), f, indent=2)
+                
+            return jsonify(stop)
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
     if not DB_AVAILABLE:
         return jsonify({'error': 'Database not available'}), 503
     
-    data = request.get_json()
+    # DB Mode continues...
     try:
         # Recalculate multiplier if category/district changes, else keep existing or auto-calc
         multiplier = calculate_demand_multiplier(
@@ -270,7 +339,6 @@ def api_update_stop(stop_id):
             data.get('category', 'regular'), 
             multiplier
         )
-        )
         if stop:
             load_bus_stops()  # Refresh cache
             return jsonify({**dict(stop), 'lat': float(stop['lat']), 'lon': float(stop['lon'])})
@@ -282,6 +350,18 @@ def api_update_stop(stop_id):
 @token_required
 def api_delete_stop(stop_id):
     """Delete a bus stop"""
+    # Offline/JSON Fallback Mode
+    if not DB_AVAILABLE:
+        if stop_id in bus_stops_data:
+            del bus_stops_data[stop_id]
+            try:
+                with open(BUS_STOPS_PATH, 'w') as f:
+                    json.dump(list(bus_stops_data.values()), f, indent=2)
+                return jsonify({'success': True})
+            except Exception as e:
+                return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Stop not found'}), 404
+
     if not DB_AVAILABLE:
         return jsonify({'error': 'Database not available'}), 503
     
@@ -327,6 +407,17 @@ def api_update_settings():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+
+# ========== API: SYSTEM STATUS ==========
+@app.route('/api/status', methods=['GET'])
+def api_status():
+    """Check system status"""
+    return jsonify({
+        'status': 'online',
+        'db_available': DB_AVAILABLE,
+        'mode': 'cloud' if DB_AVAILABLE else 'offline_fallback'
+    })
 
 # ========== API: USERS ==========
 @app.route('/api/users', methods=['GET'])
@@ -378,9 +469,9 @@ def api_get_analytics():
     """Get analytics summary"""
     if not DB_AVAILABLE:
         return jsonify({
-            'total_passengers': 24892,
-            'routes_optimized': 1247,
-            'fuel_saved': 320000,
+            'total_passengers': 0,
+            'routes_optimized': 0,
+            'fuel_saved': 0,
             'active_stops': len(bus_stops_data),
             'trends': []
         })

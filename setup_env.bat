@@ -1,0 +1,9 @@
+@echo off
+echo Creating virtual environment...
+python -m venv .venv
+call .venv\Scripts\activate
+echo Installing requirements...
+pip install -r requirements.txt
+echo Downloading map...
+python download_map.py
+echo Setup Complete > setup_done.txt
