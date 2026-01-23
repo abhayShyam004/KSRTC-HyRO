@@ -141,14 +141,19 @@
     <div id="mobileDashboard" class="mobile-dashboard">
         <!-- Header -->
         <div class="px-5 pt-8 pb-4">
-            <div class="flex items-center gap-3 mb-2">
-                <div class="h-12 w-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-                    <i class="ph ph-bus text-white text-2xl"></i>
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-3">
+                    <div class="h-12 w-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
+                        <i class="ph ph-bus text-white text-2xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-2xl font-bold text-white">KSRTC-HyRO</h1>
+                        <p class="text-blue-300 text-sm">Route Optimizer</p>
+                    </div>
                 </div>
-                <div>
-                    <h1 class="text-2xl font-bold text-white">KSRTC-HyRO</h1>
-                    <p class="text-blue-300 text-sm">Route Optimizer</p>
-                </div>
+                <a href="/admin.html" class="h-10 w-10 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center transition" title="Admin Panel">
+                    <i class="ph ph-gear-six text-white text-xl"></i>
+                </a>
             </div>
         </div>
         
@@ -270,14 +275,19 @@
 
     <!-- ========== DESKTOP SIDEBAR (Hidden on Mobile) ========== -->
     <aside id="mainSidebar" class="sidebar-main w-96 bg-white shadow-xl z-20 flex flex-col border-r border-gray-200">
-        <div class="px-6 py-5 border-b border-gray-100 flex items-center space-x-3 bg-slate-50">
-            <div class="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200">
-                <i class="ph ph-bus text-white text-xl"></i>
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-slate-50">
+            <div class="flex items-center space-x-3">
+                <div class="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200">
+                    <i class="ph ph-bus text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-gray-900 tracking-tight">KSRTC-HyRO</h1>
+                    <p class="text-xs text-blue-600 font-medium uppercase tracking-wider">Route Optimizer</p>
+                </div>
             </div>
-            <div>
-                <h1 class="text-xl font-bold text-gray-900 tracking-tight">KSRTC-HyRO</h1>
-                <p class="text-xs text-blue-600 font-medium uppercase tracking-wider">Route Optimizer</p>
-            </div>
+            <a href="/admin.html" class="h-9 w-9 bg-slate-200 hover:bg-slate-300 rounded-lg flex items-center justify-center transition" title="Admin Panel">
+                <i class="ph ph-gear-six text-slate-600 text-lg"></i>
+            </a>
         </div>
 
         <div class="flex-1 overflow-y-auto px-6 py-6 space-y-6">

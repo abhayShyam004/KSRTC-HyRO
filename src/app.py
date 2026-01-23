@@ -27,9 +27,9 @@ CORS(app)
 # Load the trained model
 try:
     model = joblib.load(MODEL_PATH)
-    print("✅ Passenger demand model loaded successfully.")
+    print("[OK] Passenger demand model loaded successfully.")
 except FileNotFoundError:
-    print(f"❌ Error: Model not found at {MODEL_PATH}")
+    print(f"[ERROR] Model not found at {MODEL_PATH}")
     print("Please run 'python src/train_demand_model.py' first.")
     model = None
 
@@ -40,9 +40,9 @@ try:
         stops = json.load(f)
         for stop in stops:
             bus_stops_data[stop['bus_stop_id']] = stop
-    print(f"✅ Loaded {len(bus_stops_data)} bus stops with demand data.")
+    print(f"[OK] Loaded {len(bus_stops_data)} bus stops with demand data.")
 except FileNotFoundError:
-    print(f"⚠️ Warning: {BUS_STOPS_PATH} not found. Using default multipliers.")
+    print(f"[WARN] {BUS_STOPS_PATH} not found. Using default multipliers.")
 
 
 @app.route('/predict', methods=['POST'])
