@@ -145,51 +145,27 @@
                 </div>
             </div>
 
-            <!-- Info Cards -->
-            <div class="grid grid-cols-2 gap-6">
-                <!-- System Status -->
-                <div class="bg-slate-50 rounded-2xl p-6 border border-gray-200 shadow-sm">
-                    <h3 class="font-bold text-lg text-gray-900 mb-4">System Status</h3>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between py-2">
-                            <span class="text-gray-600">Database</span>
-                            <span id="dbStatus" class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-xs font-semibold">Connected</span>
+            <!-- ML Route Recommendations -->
+            <div class="bg-slate-50 rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <div class="h-10 w-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+                            <i class="ph ph-brain text-white text-xl"></i>
                         </div>
-                        <div class="flex items-center justify-between py-2">
-                            <span class="text-gray-600">ML Model</span>
-                            <span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-xs font-semibold">Active</span>
-                        </div>
-                        <div class="flex items-center justify-between py-2">
-                            <span class="text-gray-600">OSRM Routing</span>
-                            <span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-xs font-semibold">Online</span>
-                        </div>
-                        <div class="flex items-center justify-between py-2">
-                            <span class="text-gray-600">Last Updated</span>
-                            <span id="lastUpdated" class="text-gray-500 text-sm">--</span>
+                        <div>
+                            <h3 class="font-bold text-lg text-gray-900">AI Route Recommendations</h3>
+                            <p class="text-gray-500 text-sm">Most profitable routes calculated by ML model</p>
                         </div>
                     </div>
+                    <button onclick="loadRecommendations()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex items-center gap-2">
+                        <i class="ph ph-arrows-clockwise"></i> Refresh
+                    </button>
                 </div>
-
-                <!-- Quick Stats -->
-                <div class="bg-slate-50 rounded-2xl p-6 border border-gray-200 shadow-sm">
-                    <h3 class="font-bold text-lg text-gray-900 mb-4">Database Overview</h3>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between py-2">
-                            <span class="text-gray-600">Total Bus Stops</span>
-                            <span id="totalStopsCount" class="font-semibold text-blue-600">--</span>
-                        </div>
-                        <div class="flex items-center justify-between py-2">
-                            <span class="text-gray-600">High Demand Stops</span>
-                            <span id="highDemandCount" class="font-semibold text-orange-600">--</span>
-                        </div>
-                        <div class="flex items-center justify-between py-2">
-                            <span class="text-gray-600">Airport Stops</span>
-                            <span id="airportCount" class="font-semibold text-purple-600">--</span>
-                        </div>
-                        <div class="flex items-center justify-between py-2">
-                            <span class="text-gray-600">Admin Users</span>
-                            <span id="userCount" class="font-semibold text-gray-600">--</span>
-                        </div>
+                
+                <div id="recommendationsContainer" class="space-y-4">
+                    <div class="text-center py-8 text-gray-400">
+                        <i class="ph ph-spinner animate-spin text-3xl mb-2"></i>
+                        <p>Analyzing routes...</p>
                     </div>
                 </div>
             </div>
@@ -618,9 +594,6 @@
                 document.getElementById('fuelSaved').textContent = '₹' + (data.fuel_saved / 1000).toFixed(1) + 'K';
                 document.getElementById('activeStops').textContent = data.active_stops;
                 
-                // Update last updated time
-                document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
-                
             } catch (e) {
                 console.log('Analytics not available:', e);
                 // Set to zeros if API fails
@@ -630,12 +603,76 @@
             }
         }
         
-        // Update dashboard overview stats
-        function updateDashboardOverview() {
-            if (busStops.length > 0) {
-                document.getElementById('totalStopsCount').textContent = busStops.length;
-                document.getElementById('highDemandCount').textContent = busStops.filter(s => (s.demand_multiplier || 1) >= 1.5).length;
-                document.getElementById('airportCount').textContent = busStops.filter(s => s.category === 'airport').length;
+        // Load ML Route Recommendations
+        async function loadRecommendations() {
+            const container = document.getElementById('recommendationsContainer');
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-400">
+                    <i class="ph ph-spinner animate-spin text-3xl mb-2"></i>
+                    <p>Analyzing routes with ML model...</p>
+                </div>
+            `;
+            
+            try {
+                const response = await apiRequest('/api/route-recommendations');
+                const data = await response.json();
+                
+                if (data.recommendations && data.recommendations.length > 0) {
+                    container.innerHTML = data.recommendations.map((rec, idx) => `
+                        <div class="bg-white rounded-xl p-4 border border-gray-100 hover:shadow-md transition">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="h-8 w-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">${idx + 1}</div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900">${rec.route_name}</h4>
+                                        <p class="text-xs text-gray-500">${rec.description}</p>
+                                    </div>
+                                </div>
+                                <span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-xs font-semibold">
+                                    ₹${rec.metrics.profit.toLocaleString()} profit
+                                </span>
+                            </div>
+                            <div class="flex flex-wrap gap-2 mb-3">
+                                ${rec.stops.map(s => `<span class="bg-slate-100 text-slate-600 px-2 py-0.5 rounded text-xs">${s.name}</span>`).join(' → ')}
+                            </div>
+                            <div class="grid grid-cols-4 gap-4 text-center pt-3 border-t border-gray-100">
+                                <div>
+                                    <p class="text-lg font-bold text-blue-600">${rec.metrics.passengers}</p>
+                                    <p class="text-xs text-gray-500">Passengers</p>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-bold text-gray-700">${rec.metrics.distance_km} km</p>
+                                    <p class="text-xs text-gray-500">Distance</p>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-bold text-emerald-600">₹${rec.metrics.revenue.toLocaleString()}</p>
+                                    <p class="text-xs text-gray-500">Revenue</p>
+                                </div>
+                                <div>
+                                    <p class="text-lg font-bold text-orange-600">₹${rec.metrics.fuel_cost.toLocaleString()}</p>
+                                    <p class="text-xs text-gray-500">Fuel Cost</p>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = `
+                        <div class="text-center py-8 text-gray-400">
+                            <i class="ph ph-path text-3xl mb-2"></i>
+                            <p>No route recommendations available yet.</p>
+                            <p class="text-sm">Add more bus stops to generate recommendations.</p>
+                        </div>
+                    `;
+                }
+            } catch (e) {
+                console.error('Failed to load recommendations:', e);
+                container.innerHTML = `
+                    <div class="text-center py-8 text-red-400">
+                        <i class="ph ph-warning-circle text-3xl mb-2"></i>
+                        <p>Failed to load recommendations</p>
+                        <button onclick="loadRecommendations()" class="text-blue-600 text-sm mt-2 hover:underline">Try again</button>
+                    </div>
+                `;
             }
         }
 
@@ -674,8 +711,9 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            loadStops().then(() => updateDashboardOverview());
+            loadStops();
             loadAnalytics();
+            loadRecommendations();
             initCharts();
         });
     </script>

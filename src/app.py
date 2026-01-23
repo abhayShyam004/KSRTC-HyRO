@@ -30,6 +30,14 @@ except ImportError:
     def token_required(f): return f
     def admin_required(f): return f
 
+# Import route profitability ML model
+try:
+    from route_profitability import get_route_recommendations, calculate_route_profitability
+    ROUTE_ML_AVAILABLE = True
+except ImportError:
+    print("[WARN] Route profitability model not found.")
+    ROUTE_ML_AVAILABLE = False
+
 # --- CONFIGURATION ---
 # Get the directory where app.py is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -345,6 +353,22 @@ def api_get_analytics():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+# ========== API: ROUTE RECOMMENDATIONS (ML) ==========
+@app.route('/api/route-recommendations', methods=['GET'])
+@token_required
+def api_route_recommendations():
+    """Get ML-powered profitable route recommendations"""
+    if not ROUTE_ML_AVAILABLE:
+        return jsonify({'error': 'Route profitability model not available'}), 503
+    
+    try:
+        # Get all stops as list for the ML model
+        stops_list = list(bus_stops_data.values())
+        recommendations = get_route_recommendations(stops_list)
+        return jsonify(recommendations)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 # Serve static files (HTML, CSS, JS)
 @app.route('/')
