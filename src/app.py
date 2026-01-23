@@ -203,18 +203,41 @@ def api_get_stops():
     else:
         return jsonify(list(bus_stops_data.values()))
 
+# Import demand logic
+from demand_logic import calculate_demand_multiplier
+
 @app.route('/api/stops', methods=['POST'])
 @token_required
 def api_create_stop():
-    """Create a new bus stop"""
+    """Create a new bus stop with auto-calculated demand"""
     if not DB_AVAILABLE:
         return jsonify({'error': 'Database not available'}), 503
     
     data = request.get_json()
+    
+    # Input Validation
+    required_fields = ['name', 'lat', 'lon', 'district', 'category']
+    missing_fields = [f for f in required_fields if f not in data or not data[f]]
+    
+    if missing_fields:
+        return jsonify({'error': f'Missing required fields: {", ".join(missing_fields)}'}), 400
+        
     try:
+        # Calculate demand multiplier automatically
+        multiplier = calculate_demand_multiplier(
+            data['category'], 
+            data['district'], 
+            data['lat'], 
+            data['lon']
+        )
+        
         stop = create_stop(
-            data['name'], data['lat'], data['lon'], data['district'],
-            data.get('category', 'regular'), data.get('demand_multiplier', 1.0)
+            data['name'], 
+            data['lat'], 
+            data['lon'], 
+            data['district'],
+            data['category'], 
+            multiplier  # Auto-calculated
         )
         load_bus_stops()  # Refresh cache
         return jsonify({**dict(stop), 'lat': float(stop['lat']), 'lon': float(stop['lon'])}), 201
@@ -224,15 +247,29 @@ def api_create_stop():
 @app.route('/api/stops/<int:stop_id>', methods=['PUT'])
 @token_required
 def api_update_stop(stop_id):
-    """Update a bus stop"""
+    """Update a bus stop and recalculate demand if needed"""
     if not DB_AVAILABLE:
         return jsonify({'error': 'Database not available'}), 503
     
     data = request.get_json()
     try:
+        # Recalculate multiplier if category/district changes, else keep existing or auto-calc
+        multiplier = calculate_demand_multiplier(
+            data.get('category', 'regular'), 
+            data.get('district', ''), 
+            data.get('lat'), 
+            data.get('lon')
+        )
+        
         stop = update_stop(
-            stop_id, data['name'], data['lat'], data['lon'], data['district'],
-            data.get('category', 'regular'), data.get('demand_multiplier', 1.0)
+            stop_id, 
+            data['name'], 
+            data['lat'], 
+            data['lon'], 
+            data['district'],
+            data.get('category', 'regular'), 
+            multiplier
+        )
         )
         if stop:
             load_bus_stops()  # Refresh cache
