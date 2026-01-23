@@ -272,6 +272,11 @@
     <!-- Mobile Overlay -->
     <div id="mobileOverlay" class="mobile-overlay" onclick="closeMobileDrawer()"></div>
 
+    <!-- ========== SAVINGS CARD (Fixed Bottom Left) ========== -->
+    <div id="savingsCard" class="fixed bottom-6 z-[1000] bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-100 p-4 w-72 transform transition-all duration-300 hidden pointer-events-auto" style="left: 26rem;">
+        <!-- Content injected by JS -->
+    </div>
+
 
     <!-- ========== DESKTOP SIDEBAR (Hidden on Mobile) ========== -->
     <aside id="mainSidebar" class="sidebar-main w-96 bg-white shadow-xl z-20 flex flex-col border-r border-gray-200">
@@ -345,6 +350,7 @@
             <button id="toggleStopsBtn" class="pointer-events-auto bg-white hover:bg-gray-50 text-gray-700 text-xs font-bold py-2.5 px-4 rounded-xl shadow-lg border border-gray-200 transition flex items-center gap-2">
                 <i class="ph ph-map-pin text-lg"></i> Show All Stops
             </button>
+            
             <div id="metricsPanel" class="pointer-events-auto w-64 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 overflow-hidden transform transition-all duration-500 translate-x-10 opacity-0 relative">
                 <div class="bg-blue-600 px-5 py-3 flex items-center justify-between">
                     <span class="text-white font-bold text-sm flex items-center gap-2"><i class="ph ph-chart-line-up"></i> Trip Summary</span>
@@ -948,88 +954,143 @@
             });
         }
         
-        async function handleGetRoute() {
+        // Global variables for route comparison
+        let originalRouteGeoJSON = null;
+        let optimizedRouteGeoJSON = null;
+        let originalRouteStats = null;
+        let optimizedRouteStats = null;
+        let originalPolyline = null;
+        let optimizedPolyline = null;
+        let activeRouteType = 'original'; // 'original' or 'optimized'
+
+        function handleGetRoute() {
+            // ... (Same initialization code)
             if (currentRoute.length < 2) { showToast("Please add at least 2 stops to calculate a route.", 'error'); return; } 
             
-            // Auto-retract sidebar if open
             if (areAllStopsVisible) toggleAllStops();
             
             getRouteBtn.disabled = true;
             getRouteBtn.innerHTML = '<i class="ph ph-spinner animate-spin text-xl"></i> Optimizing...';
             statusMsg.textContent = "Calculating best path...";
             
-            // Switch back to Global Demo Server (approx 5 decimal places for precision)
+            // 1. Get Original Route (OSRM)
             const coords = currentRoute.map(stop => `${stop.lon.toFixed(5)},${stop.lat.toFixed(5)}`).join(';');
             const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson&overview=full`;
-            console.log("DEBUG: OSRM URL:", osrmUrl);
-            console.log("DEBUG: Stops:", currentRoute.map(s => `${s.name} (${s.lat}, ${s.lon})`));
 
-            try {
-                const osrmResponse = await fetch(osrmUrl);
-                if (!osrmResponse.ok) throw new Error('OSRM Routing Failed');
-                const routeData = await osrmResponse.json();
-                if (!routeData.routes || routeData.routes.length === 0) throw new Error('No route found');
-                const route = routeData.routes[0];
-                const distance = route.distance / 1000;
-                const duration = route.duration / 60;
-
-                const predictionResponse = await fetch(`${API_BASE_URL}/predict`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        distance_km: distance, 
-                        num_stops: currentRoute.length,
-                        stop_ids: currentRoute.map(stop => stop.bus_stop_id)
-                    })
-                });
-                let passengers = 0, fuelCost = 0, highDemandStops = [];
-                if (predictionResponse.ok) {
+            // Helper to fetch and process route
+            (async () => {
+                try {
+                    const osrmResponse = await fetch(osrmUrl);
+                    if (!osrmResponse.ok) throw new Error('OSRM Routing Failed');
+                    const routeData = await osrmResponse.json();
+                    if (!routeData.routes || routeData.routes.length === 0) throw new Error('No route found');
+                    
+                    originalRouteGeoJSON = routeData.routes[0];
+                    const distance = originalRouteGeoJSON.distance / 1000;
+                    
+                    // 2. Get AI Prediction & Optimization
+                    const predictionResponse = await fetch(`${API_BASE_URL}/predict`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                            distance_km: distance, 
+                            num_stops: currentRoute.length,
+                            stop_ids: currentRoute.map(stop => stop.bus_stop_id)
+                        })
+                    });
+                    
+                    if (!predictionResponse.ok) throw new Error('Prediction Failed');
                     const predictionData = await predictionResponse.json();
-                    passengers = predictionData.expected_passengers;
-                    fuelCost = predictionData.estimated_fuel_cost_inr;
-                    highDemandStops = predictionData.high_demand_stops || [];
-                }
+                    
+                    let finalRouteGeoJSON = originalRouteGeoJSON;
+                    let finalStats = {
+                        distance: distance,
+                        duration: originalRouteGeoJSON.duration / 60,
+                        passengers: predictionData.expected_passengers,
+                        cost: predictionData.estimated_fuel_cost_inr,
+                        savings: 0
+                    };
 
-                document.getElementById('valDuration').innerText = Math.round(duration) + " min";
-                document.getElementById('valDistance').innerText = distance.toFixed(1) + " km";
-                document.getElementById('valPassengers').innerText = passengers || "--";
-                document.getElementById('valCost').innerText = "₹" + (fuelCost || "--");
-                
-                openMetrics();
-                updateMap(route);
-                statusMsg.textContent = "Route optimized successfully";
-                statusMsg.className = "text-xs text-center text-green-600 mt-3 font-medium";
-                showToast("Route optimized successfully!", 'success'); // ADDED SUCCESS TOAST
-            } catch (error) {
-                statusMsg.textContent = "Optimization failed: " + error.message;
-                statusMsg.className = "text-xs text-center text-red-500 mt-3 font-medium";
-                showToast("Optimization failed. Check internet/backend.", 'error'); // ADDED ERROR TOAST
-            } finally {
-                getRouteBtn.disabled = false;
-                getRouteBtn.innerHTML = '<i class="ph ph-lightning text-xl"></i> Optimize Route';
-            }
+                    // 3. Handle Optimized Route (Switch to it automatically if available)
+                    if (predictionData.optimized_route && predictionData.optimized_route.stop_ids) {
+                        const opt = predictionData.optimized_route;
+                        const isDifferent = JSON.stringify(opt.stop_ids) !== JSON.stringify(currentRoute.map(s=>s.bus_stop_id));
+                        
+                        if (isDifferent) {
+                            // We calculate the potential savings, but strictly RESPECT USER'S ORDER (do not overwrite finalStats or finalRouteGeoJSON)
+                            // The user wants to see stats for THEIR route, not have it auto-reordered.
+                            
+                            // Just calculate the savings value for the card
+                            finalStats.savings = opt.savings_inr || 0;
+                            
+                            // Optional: If we wanted to let them Apply it, we'd need a button. 
+                            // For now, we just show the savings potential without forcing the route change.
+                        }
+                    }
+
+                    // Render Final Map (Single Route)
+                    updateMapSingle(finalRouteGeoJSON);
+                    
+                    // Update Main Metrics Card
+                    document.getElementById('valDuration').innerText = Math.round(finalStats.duration) + " min";
+                    document.getElementById('valDistance').innerText = finalStats.distance.toFixed(1) + " km";
+                    document.getElementById('valPassengers').innerText = finalStats.passengers;
+                    document.getElementById('valCost').innerText = "₹" + finalStats.cost;
+                    openMetrics(); // Ensure it opens
+
+                    // Update Savings Card (Bottom Left)
+                    // Savings Card Removed per user request
+                    /* 
+                    const savingsCard = document.getElementById('savingsCard');
+                    if (savingsCard) savingsCard.classList.add('hidden');
+                    */
+                    
+                    statusMsg.textContent = "Route optimized successfully";
+                    showToast("Route optimized!", 'success');
+
+                } catch (error) {
+                    console.error(error);
+                    statusMsg.textContent = "Error: " + error.message;
+                    showToast("Route calculation failed.", 'error');
+                } finally {
+                    getRouteBtn.disabled = false;
+                    getRouteBtn.innerHTML = '<i class="ph ph-lightning text-xl"></i> Optimize Route';
+                }
+            })();
         }
 
-        function updateMap(route) {
+        // Removed dual-route functions (updateMetricsDisplay, selectRoute, renderComparisonMap)
+        
+        function updateMapSingle(route) {
+            if (originalPolyline) map.removeLayer(originalPolyline);
+            if (optimizedPolyline) map.removeLayer(optimizedPolyline);
             if (routeLayer) map.removeLayer(routeLayer);
-            markers.forEach(marker => map.removeLayer(marker));
-            markers = [];
+            
             const routeGeometry = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
             routeLayer = L.polyline(routeGeometry, { color: '#2563eb', weight: 6, opacity: 0.8, lineJoin: 'round' }).addTo(map);
-            currentRoute.forEach((stop, index) => {
+            
+            renderMarkers(currentRoute);
+            map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+        }
+
+        function renderMarkers(stops) {
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+            stops.forEach((stop, index) => {
                 let color = '#3b82f6';
                 if (index === 0) color = '#22c55e';
-                else if (index === currentRoute.length - 1) color = '#ef4444';
+                else if (index === stops.length - 1) color = '#ef4444';
+                
                 const customIcon = L.divIcon({
                     className: 'custom-div-icon',
-                    html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.4);"></div>`,
-                    iconSize: [20, 20], iconAnchor: [10, 10], popupAnchor: [0, -10]
+                    html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold; color:white;">${index+1}</div>`,
+                    iconSize: [24, 24], iconAnchor: [12, 12], popupAnchor: [0, -12]
                 });
+                
                 const marker = L.marker([stop.lat, stop.lon], { icon: customIcon })
                     .addTo(map)
                     .bindPopup(`<b class="font-sans text-sm">${stop.name}</b><br><span class="text-xs text-gray-500">${stop.lat.toFixed(4)}, ${stop.lon.toFixed(4)}</span>`);
                 markers.push(marker);
             });
-            map.fitBounds(routeLayer.getBounds(), { padding: [200, 50] }); 
         }
 
         function openMetrics() { metricsPanel.classList.remove('opacity-0', 'translate-x-10'); }

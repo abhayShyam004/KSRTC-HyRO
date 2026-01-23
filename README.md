@@ -71,5 +71,5 @@ Open your browser and navigate to:
 
 ## Admin Panel
 Access at: **http://localhost:5001/login.html**
-(Username: `admin`, Password: `vitbp`)
+(Username: `admin123`, Password: `admin@hyro`)
 

@@ -38,7 +38,7 @@ except ImportError as e:
 
 # Import route profitability ML model
 try:
-    from route_profitability import get_route_recommendations, calculate_route_profitability
+    from route_profitability import get_route_recommendations, calculate_route_profitability, optimize_route_order
     ROUTE_ML_AVAILABLE = True
 except ImportError as e:
     print(f"[WARN] Route profitability model not found: {e}.")
@@ -112,7 +112,6 @@ def load_bus_stops():
 
 load_bus_stops()
 
-
 @app.route('/predict', methods=['POST'])
 def predict():
     if model is None:
@@ -121,12 +120,17 @@ def predict():
     data = request.get_json()
     distance_km = data.get('distance_km')
     num_stops = data.get('num_stops')
-    stop_ids = data.get('stop_ids', [])  # NEW: Accept stop IDs
-
+    stop_ids = data.get('stop_ids', [])
+    
+    # 1. Calculate Stats for ORIGINAL Route
+    # -------------------------------------
     if not distance_km or not num_stops:
-        return jsonify({"error": "Missing 'distance_km' or 'num_stops'"}), 400
+        # If distance not provided (e.g. optimizing pure list), we might need to approx it?
+        # For now, assume frontend provides distance for the CURRENT route
+        if not stop_ids:
+             return jsonify({"error": "Missing 'distance_km' or 'stop_ids'"}), 400
 
-    # --- 1. Get Current Time Features ---
+    # ... (Time features calculation same as before) ...
     now = datetime.datetime.now()
     hour = now.hour
     day_of_week = now.weekday()
@@ -139,58 +143,128 @@ def predict():
         'is_peak_hour': is_peak
     }])
     
-    # --- 2. Calculate Weighted Passenger Demand ---
     base_passengers_per_stop = model.predict(features)[0]
-    
-    total_passengers = 0
-    high_demand_stops = []
-    
-    if stop_ids and len(stop_ids) > 0:
-        # Use stop-specific demand multipliers
-        for stop_id in stop_ids:
-            stop_info = bus_stops_data.get(stop_id, {})
-            multiplier = float(stop_info.get('demand_multiplier', 1.0))
-            category = stop_info.get('category', 'regular')
-            stop_name = stop_info.get('name', f'Stop {stop_id}')
-            
-            stop_passengers = base_passengers_per_stop * multiplier
-            total_passengers += stop_passengers
-            
-            # Track high-demand stops (multiplier > 1.5)
-            if multiplier >= 1.5:
-                high_demand_stops.append({
-                    'name': stop_name,
-                    'category': category,
-                    'multiplier': multiplier
-                })
-    else:
-        # Fallback: simple calculation
-        total_passengers = base_passengers_per_stop * num_stops
-    
-    total_passengers = round(total_passengers)
 
-    # --- 3. Calculate Load-Adjusted Fuel Cost ---
-    load_factor = min(1.0, total_passengers / BUS_CAPACITY)
-    adjusted_mileage = AVG_BUS_MILEAGE_KMPL - (load_factor * (AVG_BUS_MILEAGE_KMPL - MIN_BUS_MILEAGE_KMPL))
-    fuel_needed_litres = distance_km / adjusted_mileage
-    fuel_cost = round(fuel_needed_litres * DIESEL_PRICE_PER_LITRE)
+    def calculate_stats(current_stop_ids, dist_km):
+        total_pass = 0
+        h_stops = []
+        if current_stop_ids:
+            for s_id in current_stop_ids:
+                s_info = bus_stops_data.get(s_id, {})
+                mult = float(s_info.get('demand_multiplier', 1.0))
+                cat = s_info.get('category', 'regular')
+                s_name = s_info.get('name', f'Stop {s_id}')
+                
+                s_pass = base_passengers_per_stop * mult
+                total_pass += s_pass
+                
+                if mult >= 1.5:
+                    h_stops.append({'name': s_name, 'category': cat, 'multiplier': mult})
+        else:
+            total_pass = base_passengers_per_stop * num_stops
 
-    # Log to analytics if DB available
+        total_pass = round(total_pass)
+        l_factor = min(1.0, total_pass / BUS_CAPACITY)
+        # Prevent division by zero if dist is 0
+        if dist_km > 0:
+            adj_mileage = AVG_BUS_MILEAGE_KMPL - (l_factor * (AVG_BUS_MILEAGE_KMPL - MIN_BUS_MILEAGE_KMPL))
+            f_cost = round((dist_km / adj_mileage) * DIESEL_PRICE_PER_LITRE)
+            mileage = adj_mileage
+        else:
+            f_cost = 0
+            mileage = AVG_BUS_MILEAGE_KMPL
+            
+        return total_pass, f_cost, l_factor, mileage, h_stops
+
+    # Original Stats
+    orig_pass, orig_cost, orig_load, orig_mileage, orig_high_stops = calculate_stats(stop_ids, distance_km or 0)
+
+    # 2. GENERATE OPTIMIZED ROUTE
+    # ---------------------------
+    optimized_result = None
+    if ROUTE_ML_AVAILABLE and stop_ids and len(stop_ids) > 2:
+        try:
+            # Reconstruct stop objects for the optimizer
+            current_stops_objs = [bus_stops_data.get(sid) for sid in stop_ids if sid in bus_stops_data]
+            
+            # Run Greedy Optimizer
+            opt_stops, opt_metrics = optimize_route_order(current_stops_objs)
+            
+            # Extract new ID order
+            opt_stop_ids = [s['bus_stop_id'] for s in opt_stops]
+            
+            # Check if order actually changed
+            if opt_stop_ids != stop_ids:
+                # Calculate Haversine Distance for ORIGINAL sequence to get a calibration factor
+                from math import radians, cos, sin, asin, sqrt
+                
+                def haversine(lon1, lat1, lon2, lat2):
+                    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
+                    dlon = lon2 - lon1
+                    dlat = lat2 - lat1
+                    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+                    c = 2 * asin(sqrt(a))
+                    return 6371 * c # Radius of earth in km
+
+                def calculate_path_length(stops_sequence):
+                    total_dist = 0
+                    for i in range(len(stops_sequence)-1):
+                        s1, s2 = stops_sequence[i], stops_sequence[i+1]
+                        total_dist += haversine(s1['lon'], s1['lat'], s2['lon'], s2['lat'])
+                    return total_dist
+
+                # Calculate original haversine (flight) distance
+                orig_stops_objs = [bus_stops_data.get(sid) for sid in stop_ids if sid in bus_stops_data]
+                orig_haversine = calculate_path_length(orig_stops_objs)
+                
+                # Calculate new haversine (flight) distance from the optimizer result (or verify it)
+                # opt_metrics['distance_km'] should be this, but let's recalculate to be consistent
+                new_haversine = calculate_path_length(opt_stops)
+                
+                # Calculate the "Road Factor" from the original provided OSRM distance
+                # Factor = Real OSRM / Flight Dist
+                # If orig_haversine is 0 (single stop), factor is 1
+                road_factor = (distance_km / orig_haversine) if orig_haversine > 0 else 1.2
+                
+                # Apply this specific road factor to the NEW haversine distance
+                # This assumes the "windingness" of roads is similar for the new route
+                est_opt_distance_km = new_haversine * road_factor
+                
+                # Re-calculate ML stats for this new sequence
+                opt_pass, opt_cost, opt_load, opt_mileage, opt_high = calculate_stats(opt_stop_ids, est_opt_distance_km)
+                
+                optimized_result = {
+                    'stop_ids': opt_stop_ids,
+                    'stop_names': [s['name'] for s in opt_stops],
+                    'estimated_distance_km': round(est_opt_distance_km, 2),
+                    'expected_passengers': int(opt_pass),
+                    'estimated_fuel_cost_inr': int(opt_cost),
+                    'savings_inr': int(orig_cost - opt_cost)
+                }
+        except Exception as e:
+            print(f"[WARN] Optimization step failed: {e}")
+
+    # Log to analytics (Original Route)
     if DB_AVAILABLE:
         try:
-            log_route_optimization(stop_ids, distance_km, int(distance_km / 0.5), total_passengers, fuel_cost)
+            log_route_optimization(stop_ids, distance_km or 0, int((distance_km or 0) / 0.5), orig_pass, orig_cost)
         except Exception as e:
             print(f"[WARN] Failed to log analytics: {e}")
 
     return jsonify({
-        'expected_passengers': int(total_passengers),
-        'estimated_fuel_cost_inr': int(fuel_cost),
-        'load_factor_percent': round(load_factor * 100),
-        'adjusted_mileage_kmpl': round(adjusted_mileage, 2),
-        'high_demand_stops': high_demand_stops,
+        # Original (Current) Stats
+        'expected_passengers': int(orig_pass),
+        'estimated_fuel_cost_inr': int(orig_cost),
+        'load_factor_percent': round(orig_load * 100),
+        'adjusted_mileage_kmpl': round(orig_mileage, 2),
+        'high_demand_stops': orig_high_stops,
+        
+        # Meta
         'calculation_time': now.strftime('%H:%M'),
         'is_peak_hour': bool(is_peak),
-        'is_weekend': bool(is_weekend)
+        
+        # New: Optimized Alternative
+        'optimized_route': optimized_result
     })
 
 
@@ -483,7 +557,13 @@ def api_get_analytics():
         })
     
     try:
-        return jsonify(get_analytics_summary())
+        data = get_analytics_summary()
+        # Fix date serialization for JSON
+        if 'trends' in data:
+            for item in data['trends']:
+                if isinstance(item.get('date'), (datetime.date, datetime.datetime)):
+                    item['date'] = item['date'].isoformat()
+        return jsonify(data)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -503,6 +583,33 @@ def api_route_recommendations():
         return jsonify(recommendations)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ========== API: ADMIN ==========
+@app.route('/api/admin/retrain', methods=['POST'])
+@token_required
+def api_retrain_model():
+    """Trigger model retraining on latest DB data"""
+    try:
+        # Dynamic import to avoid circular dependencies/startup costs
+        from train_demand_model import train_model
+        
+        print("[INFO] Starting manual model retraining...")
+        success = train_model()
+        
+        if success:
+            # Reload model in memory
+            global model
+            try:
+                model = joblib.load(MODEL_PATH)
+                print("[INFO] Model reloaded in application.")
+                return jsonify({'success': True, 'message': 'Model trained and reloaded successfully.'})
+            except Exception as e:
+                return jsonify({'error': f'Training succeeded but reload failed: {str(e)}'}), 500
+        else:
+            return jsonify({'error': 'Training failed. Check logs.'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': f"Retraining process error: {str(e)}"}), 500
 
 # Serve static files (HTML, CSS, JS)
 @app.route('/')

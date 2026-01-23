@@ -5,6 +5,7 @@ Handles PostgreSQL connection and CRUD operations
 import os
 import psycopg2
 import psycopg2.extras
+import bcrypt
 from psycopg2.extras import RealDictCursor
 from contextlib import contextmanager
 
@@ -200,19 +201,17 @@ def seed_default_data():
                 conn.commit()
                 print("[OK] Seeded default settings.")
             
-            # Check if users table is empty
-            cur.execute("SELECT COUNT(*) FROM users")
-            count = cur.fetchone()[0]
-            
             if count == 0:
-                # Insert default admin user (password: admin123)
+                # Hash the password for safety
+                hashed_pw = bcrypt.hashpw('admin@hyro'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+                # Insert default admin user
                 cur.execute('''
                     INSERT INTO users (name, email, password_hash, role, status)
                     VALUES (%s, %s, %s, %s, %s)
-                ''', ('Admin User', 'admin@Hyro', 'admin123', 'super_admin', 'active'))
+                ''', ('Admin User', 'admin123', hashed_pw, 'super_admin', 'active'))
                 
                 conn.commit()
-                print("[OK] Seeded default admin user.")
+                print("[OK] Seeded default admin user (admin123 / admin@hyro).")
 
 # ========== BUS STOPS CRUD ==========
 def get_all_stops():
@@ -297,6 +296,13 @@ def get_all_users():
         with conn.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute('SELECT user_id, name, email, role, status, last_login, created_at FROM users ORDER BY user_id')
             return cur.fetchall()
+
+def get_user_by_email(email):
+    """Get a single user by email including password hash"""
+    with get_db_connection() as conn:
+        with conn.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute('SELECT * FROM users WHERE email = %s', (email,))
+            return cur.fetchone()
 
 def create_user(name, email, password, role='operator'):
     """Create a new user"""

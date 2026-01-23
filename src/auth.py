@@ -14,10 +14,7 @@ JWT_SECRET = os.environ.get('JWT_SECRET', 'ksrtc-hyro-secret-key-2024-vitbp')
 JWT_ALGORITHM = 'HS256'
 JWT_EXPIRATION_HOURS = 24  # Token valid for 24 hours
 
-# Admin credentials - hashed password
-ADMIN_USERNAME = 'admin'
-# Pre-hashed password for 'vitbp'
-ADMIN_PASSWORD_HASH = bcrypt.hashpw('vitbp'.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+from database import get_user_by_email
 
 def verify_password(password, hashed):
     """Verify a password against its hash"""
@@ -50,20 +47,31 @@ def decode_token(token):
     except jwt.InvalidTokenError:
         return None  # Invalid token
 
-def login(username, password):
+def login(email, password):
     """
     Authenticate user and return token if valid
-    Returns (token, error_message)
+    Returns (token, user_dict, error_message)
     """
-    # Check against hardcoded admin credentials
-    if username == ADMIN_USERNAME:
-        if verify_password(password, ADMIN_PASSWORD_HASH):
-            token = generate_token(username, 'super_admin')
-            return token, None
-        else:
-            return None, 'Invalid password'
+    # Check against database users
+    user = get_user_by_email(email)
     
-    return None, 'User not found'
+    if user:
+        if verify_password(password, user['password_hash']):
+            if user['status'] != 'active':
+                return None, None, 'Account is disabled'
+            
+            token = generate_token(email, user['role'])
+            user_data = {
+                'id': user['user_id'],
+                'name': user['name'],
+                'email': user['email'],
+                'role': user['role']
+            }
+            return token, user_data, None
+        else:
+            return None, None, 'Invalid password'
+    
+    return None, None, 'User not found'
 
 def token_required(f):
     """
@@ -141,13 +149,13 @@ def register_auth_routes(app):
         if not data:
             return jsonify({'error': 'No data provided'}), 400
         
-        username = data.get('username', '').strip()
+        username = data.get('username', '').strip()  # This is the email
         password = data.get('password', '')
         
         if not username or not password:
-            return jsonify({'error': 'Username and password required'}), 400
+            return jsonify({'error': 'Email and password required'}), 400
         
-        token, error = login(username, password)
+        token, user_data, error = login(username, password)
         
         if error:
             return jsonify({'error': error}), 401
@@ -155,10 +163,7 @@ def register_auth_routes(app):
         response = jsonify({
             'success': True,
             'token': token,
-            'user': {
-                'username': username,
-                'role': 'super_admin'
-            },
+            'user': user_data,
             'expires_in': JWT_EXPIRATION_HOURS * 3600  # seconds
         })
         
