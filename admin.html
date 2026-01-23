@@ -9,66 +9,59 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
-        .sidebar-link { transition: all 0.2s; }
-        .sidebar-link:hover, .sidebar-link.active { background: rgba(59, 130, 246, 0.1); border-left: 3px solid #3b82f6; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .sidebar-link { transition: all 0.2s; border-left: 3px solid transparent; }
+        .sidebar-link:hover { background: #eff6ff; border-left-color: #3b82f6; color: #1d4ed8; }
+        .sidebar-link.active { background: #eff6ff; border-left-color: #3b82f6; color: #1d4ed8; font-weight: 600; }
         .stat-card { transition: transform 0.2s, box-shadow 0.2s; }
-        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(0,0,0,0.3); }
-        .table-row:hover { background: rgba(59, 130, 246, 0.05); }
+        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 10px 40px rgba(59, 130, 246, 0.15); }
+        .table-row:hover { background: #f8fafc; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.3s ease-out; }
-        .glow { box-shadow: 0 0 20px rgba(59, 130, 246, 0.3); }
     </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen flex">
+<body class="bg-gray-50 text-gray-800 min-h-screen flex">
 
     <!-- ========== SIDEBAR ========== -->
-    <aside class="w-64 bg-slate-800/50 backdrop-blur-xl border-r border-slate-700/50 flex flex-col fixed h-full z-50">
+    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full z-50 shadow-sm">
         <!-- Logo -->
-        <div class="p-6 border-b border-slate-700/50">
+        <div class="p-6 border-b border-gray-100">
             <div class="flex items-center gap-3">
-                <div class="h-10 w-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg glow">
+                <div class="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200">
                     <i class="ph ph-bus text-white text-xl"></i>
                 </div>
                 <div>
-                    <h1 class="font-bold text-lg">KSRTC-HyRO</h1>
-                    <p class="text-[10px] text-blue-400 font-medium uppercase tracking-wider">Admin Panel</p>
+                    <h1 class="font-bold text-lg text-gray-900">KSRTC-HyRO</h1>
+                    <p class="text-[10px] text-blue-600 font-semibold uppercase tracking-wider">Admin Panel</p>
                 </div>
             </div>
         </div>
 
         <!-- Navigation -->
         <nav class="flex-1 p-4 space-y-1">
-            <a href="#" onclick="showSection('dashboard')" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-300" id="nav-dashboard">
-                <i class="ph ph-chart-pie-slice text-xl text-blue-400"></i> Dashboard
+            <a href="#" onclick="showSection('dashboard')" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-600" id="nav-dashboard">
+                <i class="ph ph-chart-pie-slice text-xl text-blue-500"></i> Dashboard
             </a>
-            <a href="#" onclick="showSection('stops')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400" id="nav-stops">
-                <i class="ph ph-map-pin text-xl"></i> Manage Stops
+            <a href="#" onclick="showSection('stops')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-600" id="nav-stops">
+                <i class="ph ph-map-pin text-xl text-gray-400"></i> Manage Stops
             </a>
-            <a href="#" onclick="showSection('settings')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400" id="nav-settings">
-                <i class="ph ph-gear-six text-xl"></i> Configuration
+            <a href="#" onclick="showSection('settings')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-600" id="nav-settings">
+                <i class="ph ph-gear-six text-xl text-gray-400"></i> Configuration
             </a>
-            <a href="#" onclick="showSection('users')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-slate-400" id="nav-users">
-                <i class="ph ph-users-three text-xl"></i> User Management
+            <a href="#" onclick="showSection('users')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-600" id="nav-users">
+                <i class="ph ph-users-three text-xl text-gray-400"></i> User Management
             </a>
         </nav>
 
         <!-- Footer -->
-        <div class="p-4 border-t border-slate-700/50">
-            <div class="flex items-center gap-3 px-2">
-                <div class="h-9 w-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-sm font-bold">A</div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium">Admin</p>
-                    <p class="text-xs text-slate-500">Super Admin</p>
-                </div>
-                <button onclick="logout()" class="text-slate-500 hover:text-red-400 transition">
-                    <i class="ph ph-sign-out text-xl"></i>
-                </button>
-            </div>
+        <div class="p-4 border-t border-gray-100">
+            <a href="/" class="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition">
+                <i class="ph ph-arrow-left text-lg"></i> Back to App
+            </a>
         </div>
     </aside>
 
@@ -78,17 +71,17 @@
         <!-- HEADER -->
         <header class="flex items-center justify-between mb-8">
             <div>
-                <h2 class="text-2xl font-bold" id="sectionTitle">Analytics Dashboard</h2>
-                <p class="text-slate-500 text-sm mt-1">Real-time insights into your fleet operations</p>
+                <h2 class="text-2xl font-bold text-gray-900" id="sectionTitle">Analytics Dashboard</h2>
+                <p class="text-gray-500 text-sm mt-1">Real-time insights into your fleet operations</p>
             </div>
             <div class="flex items-center gap-4">
                 <div class="relative">
-                    <input type="text" placeholder="Search..." class="bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64">
-                    <i class="ph ph-magnifying-glass absolute left-3.5 top-3 text-slate-500"></i>
+                    <input type="text" placeholder="Search..." class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent w-64 shadow-sm">
+                    <i class="ph ph-magnifying-glass absolute left-3.5 top-3 text-gray-400"></i>
                 </div>
-                <button class="relative p-2.5 bg-slate-800 rounded-xl border border-slate-700 hover:bg-slate-700 transition">
-                    <i class="ph ph-bell text-xl text-slate-400"></i>
-                    <span class="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-[10px] flex items-center justify-center">3</span>
+                <button class="relative p-2.5 bg-white rounded-xl border border-gray-200 hover:bg-gray-50 transition shadow-sm">
+                    <i class="ph ph-bell text-xl text-gray-500"></i>
+                    <span class="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full text-[10px] text-white flex items-center justify-center">3</span>
                 </button>
             </div>
         </header>
@@ -97,58 +90,58 @@
         <section id="section-dashboard" class="fade-in">
             <!-- Stats Grid -->
             <div class="grid grid-cols-4 gap-6 mb-8">
-                <div class="stat-card bg-gradient-to-br from-blue-600 to-blue-700 rounded-2xl p-6">
+                <div class="stat-card bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center">
-                            <i class="ph ph-users text-2xl text-white"></i>
+                        <div class="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="ph ph-users text-2xl text-blue-600"></i>
                         </div>
-                        <span class="text-xs bg-white/20 px-2 py-1 rounded-full text-white">+12.5%</span>
+                        <span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full font-medium">+12.5%</span>
                     </div>
-                    <p class="text-3xl font-bold" id="totalPassengers">24,892</p>
-                    <p class="text-blue-200 text-sm mt-1">Total Passengers</p>
+                    <p class="text-3xl font-bold text-gray-900" id="totalPassengers">24,892</p>
+                    <p class="text-gray-500 text-sm mt-1">Total Passengers</p>
                 </div>
-                <div class="stat-card bg-gradient-to-br from-emerald-600 to-emerald-700 rounded-2xl p-6">
+                <div class="stat-card bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center">
-                            <i class="ph ph-path text-2xl text-white"></i>
+                        <div class="h-12 w-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                            <i class="ph ph-path text-2xl text-emerald-600"></i>
                         </div>
-                        <span class="text-xs bg-white/20 px-2 py-1 rounded-full text-white">+8.3%</span>
+                        <span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full font-medium">+8.3%</span>
                     </div>
-                    <p class="text-3xl font-bold" id="totalRoutes">1,247</p>
-                    <p class="text-emerald-200 text-sm mt-1">Routes Optimized</p>
+                    <p class="text-3xl font-bold text-gray-900" id="totalRoutes">1,247</p>
+                    <p class="text-gray-500 text-sm mt-1">Routes Optimized</p>
                 </div>
-                <div class="stat-card bg-gradient-to-br from-orange-600 to-orange-700 rounded-2xl p-6">
+                <div class="stat-card bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center">
-                            <i class="ph ph-gas-pump text-2xl text-white"></i>
+                        <div class="h-12 w-12 bg-orange-100 rounded-xl flex items-center justify-center">
+                            <i class="ph ph-gas-pump text-2xl text-orange-600"></i>
                         </div>
-                        <span class="text-xs bg-white/20 px-2 py-1 rounded-full text-white">-5.2%</span>
+                        <span class="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full font-medium">-5.2%</span>
                     </div>
-                    <p class="text-3xl font-bold" id="fuelSaved">₹3.2L</p>
-                    <p class="text-orange-200 text-sm mt-1">Fuel Cost Saved</p>
+                    <p class="text-3xl font-bold text-gray-900" id="fuelSaved">₹3.2L</p>
+                    <p class="text-gray-500 text-sm mt-1">Fuel Cost Saved</p>
                 </div>
-                <div class="stat-card bg-gradient-to-br from-purple-600 to-purple-700 rounded-2xl p-6">
+                <div class="stat-card bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                     <div class="flex items-center justify-between mb-4">
-                        <div class="h-12 w-12 bg-white/20 rounded-xl flex items-center justify-center">
-                            <i class="ph ph-map-pin text-2xl text-white"></i>
+                        <div class="h-12 w-12 bg-purple-100 rounded-xl flex items-center justify-center">
+                            <i class="ph ph-map-pin text-2xl text-purple-600"></i>
                         </div>
-                        <span class="text-xs bg-white/20 px-2 py-1 rounded-full text-white">Active</span>
+                        <span class="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full font-medium">Active</span>
                     </div>
-                    <p class="text-3xl font-bold" id="activeStops">16</p>
-                    <p class="text-purple-200 text-sm mt-1">Active Stops</p>
+                    <p class="text-3xl font-bold text-gray-900" id="activeStops">16</p>
+                    <p class="text-gray-500 text-sm mt-1">Active Stops</p>
                 </div>
             </div>
 
             <!-- Charts Row -->
             <div class="grid grid-cols-3 gap-6 mb-8">
                 <!-- Passenger Trends Chart -->
-                <div class="col-span-2 bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700/50">
+                <div class="col-span-2 bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                     <div class="flex items-center justify-between mb-6">
                         <div>
-                            <h3 class="font-bold text-lg">Passenger Trends</h3>
-                            <p class="text-slate-500 text-sm">Daily passenger count over the last 7 days</p>
+                            <h3 class="font-bold text-lg text-gray-900">Passenger Trends</h3>
+                            <p class="text-gray-500 text-sm">Daily passenger count over the last 7 days</p>
                         </div>
-                        <select class="bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 text-sm focus:outline-none">
+                        <select class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option>Last 7 Days</option>
                             <option>Last 30 Days</option>
                             <option>This Year</option>
@@ -158,9 +151,9 @@
                 </div>
 
                 <!-- Route Distribution -->
-                <div class="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700/50">
-                    <h3 class="font-bold text-lg mb-2">Route Distribution</h3>
-                    <p class="text-slate-500 text-sm mb-6">By district coverage</p>
+                <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <h3 class="font-bold text-lg text-gray-900 mb-2">Route Distribution</h3>
+                    <p class="text-gray-500 text-sm mb-6">By district coverage</p>
                     <canvas id="routeDistributionChart" height="200"></canvas>
                 </div>
             </div>
@@ -168,42 +161,42 @@
             <!-- Peak Hours & Top Routes -->
             <div class="grid grid-cols-2 gap-6">
                 <!-- Peak Hours -->
-                <div class="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700/50">
-                    <h3 class="font-bold text-lg mb-6">Peak Demand Hours</h3>
+                <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <h3 class="font-bold text-lg text-gray-900 mb-6">Peak Demand Hours</h3>
                     <canvas id="peakHoursChart" height="150"></canvas>
                 </div>
 
                 <!-- Top Routes Table -->
-                <div class="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700/50">
-                    <h3 class="font-bold text-lg mb-6">Top Performing Routes</h3>
+                <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
+                    <h3 class="font-bold text-lg text-gray-900 mb-6">Top Performing Routes</h3>
                     <table class="w-full">
                         <thead>
-                            <tr class="text-left text-slate-500 text-sm border-b border-slate-700">
+                            <tr class="text-left text-gray-500 text-sm border-b border-gray-100">
                                 <th class="pb-3">Route</th>
                                 <th class="pb-3">Passengers</th>
                                 <th class="pb-3">Efficiency</th>
                             </tr>
                         </thead>
                         <tbody id="topRoutesTable">
-                            <tr class="table-row border-b border-slate-700/50">
-                                <td class="py-3 text-sm">Thampanoor → Vyttila</td>
-                                <td class="py-3 text-sm text-blue-400 font-medium">3,421</td>
-                                <td class="py-3"><span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">94%</span></td>
+                            <tr class="table-row border-b border-gray-50">
+                                <td class="py-3 text-sm font-medium">Thampanoor → Vyttila</td>
+                                <td class="py-3 text-sm text-blue-600 font-semibold">3,421</td>
+                                <td class="py-3"><span class="text-xs bg-emerald-100 text-emerald-600 px-2 py-1 rounded-full font-medium">94%</span></td>
                             </tr>
-                            <tr class="table-row border-b border-slate-700/50">
-                                <td class="py-3 text-sm">Ernakulam → Aluva</td>
-                                <td class="py-3 text-sm text-blue-400 font-medium">2,847</td>
-                                <td class="py-3"><span class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full">91%</span></td>
+                            <tr class="table-row border-b border-gray-50">
+                                <td class="py-3 text-sm font-medium">Ernakulam → Aluva</td>
+                                <td class="py-3 text-sm text-blue-600 font-semibold">2,847</td>
+                                <td class="py-3"><span class="text-xs bg-emerald-100 text-emerald-600 px-2 py-1 rounded-full font-medium">91%</span></td>
                             </tr>
-                            <tr class="table-row border-b border-slate-700/50">
-                                <td class="py-3 text-sm">Kozhikode → Calicut Airport</td>
-                                <td class="py-3 text-sm text-blue-400 font-medium">2,156</td>
-                                <td class="py-3"><span class="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">87%</span></td>
+                            <tr class="table-row border-b border-gray-50">
+                                <td class="py-3 text-sm font-medium">Kozhikode → Calicut Airport</td>
+                                <td class="py-3 text-sm text-blue-600 font-semibold">2,156</td>
+                                <td class="py-3"><span class="text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full font-medium">87%</span></td>
                             </tr>
                             <tr class="table-row">
-                                <td class="py-3 text-sm">Kottayam → Alappuzha</td>
-                                <td class="py-3 text-sm text-blue-400 font-medium">1,932</td>
-                                <td class="py-3"><span class="text-xs bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded-full">85%</span></td>
+                                <td class="py-3 text-sm font-medium">Kottayam → Alappuzha</td>
+                                <td class="py-3 text-sm text-blue-600 font-semibold">1,932</td>
+                                <td class="py-3"><span class="text-xs bg-yellow-100 text-yellow-600 px-2 py-1 rounded-full font-medium">85%</span></td>
                             </tr>
                         </tbody>
                     </table>
@@ -215,17 +208,17 @@
         <section id="section-stops" class="hidden fade-in">
             <div class="flex items-center justify-between mb-6">
                 <div>
-                    <p class="text-slate-500 text-sm">Add, edit, or remove bus stops from the network</p>
+                    <p class="text-gray-500 text-sm">Add, edit, or remove bus stops from the network</p>
                 </div>
-                <button onclick="openAddStopModal()" class="bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                <button onclick="openAddStopModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-lg shadow-blue-200">
                     <i class="ph ph-plus-circle text-lg"></i> Add New Stop
                 </button>
             </div>
 
-            <div class="bg-slate-800/50 backdrop-blur rounded-2xl border border-slate-700/50 overflow-hidden">
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <table class="w-full">
                     <thead>
-                        <tr class="text-left text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700 bg-slate-800/50">
+                        <tr class="text-left text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100 bg-gray-50">
                             <th class="px-6 py-4">ID</th>
                             <th class="px-6 py-4">Stop Name</th>
                             <th class="px-6 py-4">District</th>
@@ -246,87 +239,87 @@
         <section id="section-settings" class="hidden fade-in">
             <div class="grid grid-cols-2 gap-8">
                 <!-- Fuel Settings -->
-                <div class="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700/50">
+                <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                     <div class="flex items-center gap-3 mb-6">
-                        <div class="h-10 w-10 bg-orange-500/20 rounded-xl flex items-center justify-center">
-                            <i class="ph ph-gas-pump text-xl text-orange-400"></i>
+                        <div class="h-10 w-10 bg-orange-100 rounded-xl flex items-center justify-center">
+                            <i class="ph ph-gas-pump text-xl text-orange-600"></i>
                         </div>
                         <div>
-                            <h3 class="font-bold">Fuel Configuration</h3>
-                            <p class="text-slate-500 text-sm">Manage fuel cost calculations</p>
+                            <h3 class="font-bold text-gray-900">Fuel Configuration</h3>
+                            <p class="text-gray-500 text-sm">Manage fuel cost calculations</p>
                         </div>
                     </div>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm text-slate-400 mb-2">Diesel Price (₹/litre)</label>
-                            <input type="number" id="dieselPrice" value="95.21" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm text-gray-600 font-medium mb-2">Diesel Price (₹/litre)</label>
+                            <input type="number" id="dieselPrice" value="95.21" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                         <div>
-                            <label class="block text-sm text-slate-400 mb-2">Empty Bus Mileage (km/L)</label>
-                            <input type="number" id="emptyMileage" value="4.5" step="0.1" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm text-gray-600 font-medium mb-2">Empty Bus Mileage (km/L)</label>
+                            <input type="number" id="emptyMileage" value="4.5" step="0.1" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                         <div>
-                            <label class="block text-sm text-slate-400 mb-2">Full Bus Mileage (km/L)</label>
-                            <input type="number" id="fullMileage" value="3.5" step="0.1" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm text-gray-600 font-medium mb-2">Full Bus Mileage (km/L)</label>
+                            <input type="number" id="fullMileage" value="3.5" step="0.1" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                     </div>
                 </div>
 
                 <!-- Bus Settings -->
-                <div class="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700/50">
+                <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                     <div class="flex items-center gap-3 mb-6">
-                        <div class="h-10 w-10 bg-blue-500/20 rounded-xl flex items-center justify-center">
-                            <i class="ph ph-bus text-xl text-blue-400"></i>
+                        <div class="h-10 w-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                            <i class="ph ph-bus text-xl text-blue-600"></i>
                         </div>
                         <div>
-                            <h3 class="font-bold">Bus Configuration</h3>
-                            <p class="text-slate-500 text-sm">Standard bus parameters</p>
+                            <h3 class="font-bold text-gray-900">Bus Configuration</h3>
+                            <p class="text-gray-500 text-sm">Standard bus parameters</p>
                         </div>
                     </div>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm text-slate-400 mb-2">Bus Seating Capacity</label>
-                            <input type="number" id="busCapacity" value="55" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm text-gray-600 font-medium mb-2">Bus Seating Capacity</label>
+                            <input type="number" id="busCapacity" value="55" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                         <div>
-                            <label class="block text-sm text-slate-400 mb-2">Peak Hours (Morning)</label>
-                            <input type="text" id="peakMorning" value="8:00 AM - 10:00 AM" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm text-gray-600 font-medium mb-2">Peak Hours (Morning)</label>
+                            <input type="text" id="peakMorning" value="8:00 AM - 10:00 AM" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                         <div>
-                            <label class="block text-sm text-slate-400 mb-2">Peak Hours (Evening)</label>
-                            <input type="text" id="peakEvening" value="5:00 PM - 7:00 PM" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm text-gray-600 font-medium mb-2">Peak Hours (Evening)</label>
+                            <input type="text" id="peakEvening" value="5:00 PM - 7:00 PM" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                     </div>
                 </div>
 
                 <!-- API Settings -->
-                <div class="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700/50">
+                <div class="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm">
                     <div class="flex items-center gap-3 mb-6">
-                        <div class="h-10 w-10 bg-purple-500/20 rounded-xl flex items-center justify-center">
-                            <i class="ph ph-globe text-xl text-purple-400"></i>
+                        <div class="h-10 w-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                            <i class="ph ph-globe text-xl text-purple-600"></i>
                         </div>
                         <div>
-                            <h3 class="font-bold">API Configuration</h3>
-                            <p class="text-slate-500 text-sm">External service settings</p>
+                            <h3 class="font-bold text-gray-900">API Configuration</h3>
+                            <p class="text-gray-500 text-sm">External service settings</p>
                         </div>
                     </div>
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-sm text-slate-400 mb-2">OSRM Routing Server</label>
-                            <input type="text" id="osrmServer" value="https://router.project-osrm.org" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm text-gray-600 font-medium mb-2">OSRM Routing Server</label>
+                            <input type="text" id="osrmServer" value="https://router.project-osrm.org" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                         <div>
-                            <label class="block text-sm text-slate-400 mb-2">API Rate Limit (requests/min)</label>
-                            <input type="number" id="rateLimit" value="60" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm text-gray-600 font-medium mb-2">API Rate Limit (requests/min)</label>
+                            <input type="number" id="rateLimit" value="60" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                     </div>
                 </div>
 
                 <!-- Save Button -->
-                <div class="bg-slate-800/50 backdrop-blur rounded-2xl p-6 border border-slate-700/50 flex flex-col justify-center items-center">
-                    <i class="ph ph-floppy-disk text-6xl text-slate-600 mb-4"></i>
-                    <p class="text-slate-400 text-center mb-4">Don't forget to save your changes</p>
-                    <button onclick="saveSettings()" class="bg-emerald-600 hover:bg-emerald-500 px-8 py-3 rounded-xl font-semibold transition flex items-center gap-2">
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-6 border border-blue-200 flex flex-col justify-center items-center">
+                    <i class="ph ph-floppy-disk text-6xl text-blue-300 mb-4"></i>
+                    <p class="text-gray-600 text-center mb-4">Don't forget to save your changes</p>
+                    <button onclick="saveSettings()" class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-xl font-semibold transition flex items-center gap-2 shadow-lg shadow-blue-200">
                         <i class="ph ph-check-circle text-lg"></i> Save All Settings
                     </button>
                 </div>
@@ -336,16 +329,16 @@
         <!-- ========== USER MANAGEMENT SECTION ========== -->
         <section id="section-users" class="hidden fade-in">
             <div class="flex items-center justify-between mb-6">
-                <p class="text-slate-500 text-sm">Manage administrator access and permissions</p>
-                <button onclick="openAddUserModal()" class="bg-blue-600 hover:bg-blue-500 px-5 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                <p class="text-gray-500 text-sm">Manage administrator access and permissions</p>
+                <button onclick="openAddUserModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-lg shadow-blue-200">
                     <i class="ph ph-user-plus text-lg"></i> Add New User
                 </button>
             </div>
 
-            <div class="bg-slate-800/50 backdrop-blur rounded-2xl border border-slate-700/50 overflow-hidden">
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <table class="w-full">
                     <thead>
-                        <tr class="text-left text-slate-400 text-xs uppercase tracking-wider border-b border-slate-700 bg-slate-800/50">
+                        <tr class="text-left text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100 bg-gray-50">
                             <th class="px-6 py-4">User</th>
                             <th class="px-6 py-4">Email</th>
                             <th class="px-6 py-4">Role</th>
@@ -355,39 +348,39 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="table-row border-b border-slate-700/50">
+                        <tr class="table-row border-b border-gray-50">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="h-9 w-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm font-bold">AD</div>
-                                    <span class="font-medium">Admin User</span>
+                                    <div class="h-9 w-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm font-bold text-white">AD</div>
+                                    <span class="font-medium text-gray-900">Admin User</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-slate-400">admin@ksrtc.com</td>
-                            <td class="px-6 py-4"><span class="bg-purple-500/20 text-purple-400 px-3 py-1 rounded-full text-xs font-medium">Super Admin</span></td>
-                            <td class="px-6 py-4"><span class="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-medium">Active</span></td>
-                            <td class="px-6 py-4 text-slate-400 text-sm">Just now</td>
+                            <td class="px-6 py-4 text-gray-500">admin@ksrtc.com</td>
+                            <td class="px-6 py-4"><span class="bg-purple-100 text-purple-600 px-3 py-1 rounded-full text-xs font-semibold">Super Admin</span></td>
+                            <td class="px-6 py-4"><span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-xs font-semibold">Active</span></td>
+                            <td class="px-6 py-4 text-gray-500 text-sm">Just now</td>
                             <td class="px-6 py-4">
                                 <div class="flex gap-2">
-                                    <button class="p-2 hover:bg-slate-700 rounded-lg transition"><i class="ph ph-pencil text-slate-400"></i></button>
-                                    <button class="p-2 hover:bg-red-500/20 rounded-lg transition"><i class="ph ph-trash text-red-400"></i></button>
+                                    <button class="p-2 hover:bg-gray-100 rounded-lg transition"><i class="ph ph-pencil text-gray-500"></i></button>
+                                    <button class="p-2 hover:bg-red-50 rounded-lg transition"><i class="ph ph-trash text-red-500"></i></button>
                                 </div>
                             </td>
                         </tr>
-                        <tr class="table-row border-b border-slate-700/50">
+                        <tr class="table-row border-b border-gray-50">
                             <td class="px-6 py-4">
                                 <div class="flex items-center gap-3">
-                                    <div class="h-9 w-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-sm font-bold">OP</div>
-                                    <span class="font-medium">Operator</span>
+                                    <div class="h-9 w-9 rounded-full bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-sm font-bold text-white">OP</div>
+                                    <span class="font-medium text-gray-900">Operator</span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-slate-400">operator@ksrtc.com</td>
-                            <td class="px-6 py-4"><span class="bg-blue-500/20 text-blue-400 px-3 py-1 rounded-full text-xs font-medium">Operator</span></td>
-                            <td class="px-6 py-4"><span class="bg-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-medium">Active</span></td>
-                            <td class="px-6 py-4 text-slate-400 text-sm">2 hours ago</td>
+                            <td class="px-6 py-4 text-gray-500">operator@ksrtc.com</td>
+                            <td class="px-6 py-4"><span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-semibold">Operator</span></td>
+                            <td class="px-6 py-4"><span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-xs font-semibold">Active</span></td>
+                            <td class="px-6 py-4 text-gray-500 text-sm">2 hours ago</td>
                             <td class="px-6 py-4">
                                 <div class="flex gap-2">
-                                    <button class="p-2 hover:bg-slate-700 rounded-lg transition"><i class="ph ph-pencil text-slate-400"></i></button>
-                                    <button class="p-2 hover:bg-red-500/20 rounded-lg transition"><i class="ph ph-trash text-red-400"></i></button>
+                                    <button class="p-2 hover:bg-gray-100 rounded-lg transition"><i class="ph ph-pencil text-gray-500"></i></button>
+                                    <button class="p-2 hover:bg-red-50 rounded-lg transition"><i class="ph ph-trash text-red-500"></i></button>
                                 </div>
                             </td>
                         </tr>
@@ -399,30 +392,30 @@
     </main>
 
     <!-- ========== ADD STOP MODAL ========== -->
-    <div id="addStopModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 hidden items-center justify-center">
-        <div class="bg-slate-800 rounded-2xl p-6 w-full max-w-md border border-slate-700 shadow-2xl">
+    <div id="addStopModal" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 hidden items-center justify-center">
+        <div class="bg-white rounded-2xl p-6 w-full max-w-md border border-gray-200 shadow-2xl">
             <div class="flex items-center justify-between mb-6">
-                <h3 class="text-xl font-bold">Add New Stop</h3>
-                <button onclick="closeAddStopModal()" class="text-slate-400 hover:text-white"><i class="ph ph-x text-xl"></i></button>
+                <h3 class="text-xl font-bold text-gray-900">Add New Stop</h3>
+                <button onclick="closeAddStopModal()" class="text-gray-400 hover:text-gray-600"><i class="ph ph-x text-xl"></i></button>
             </div>
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm text-slate-400 mb-2">Stop Name</label>
-                    <input type="text" id="newStopName" placeholder="e.g., Ernakulam Central" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-sm text-gray-600 font-medium mb-2">Stop Name</label>
+                    <input type="text" id="newStopName" placeholder="e.g., Ernakulam Central" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm text-slate-400 mb-2">Latitude</label>
-                        <input type="number" id="newStopLat" step="0.0001" placeholder="9.9312" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm text-gray-600 font-medium mb-2">Latitude</label>
+                        <input type="number" id="newStopLat" step="0.0001" placeholder="9.9312" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                     <div>
-                        <label class="block text-sm text-slate-400 mb-2">Longitude</label>
-                        <input type="number" id="newStopLon" step="0.0001" placeholder="76.2673" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm text-gray-600 font-medium mb-2">Longitude</label>
+                        <input type="number" id="newStopLon" step="0.0001" placeholder="76.2673" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
                 <div>
-                    <label class="block text-sm text-slate-400 mb-2">District</label>
-                    <select id="newStopDistrict" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <label class="block text-sm text-gray-600 font-medium mb-2">District</label>
+                    <select id="newStopDistrict" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option>Thiruvananthapuram</option>
                         <option>Kollam</option>
                         <option>Alappuzha</option>
@@ -439,8 +432,8 @@
                 </div>
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm text-slate-400 mb-2">Category</label>
-                        <select id="newStopCategory" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm text-gray-600 font-medium mb-2">Category</label>
+                        <select id="newStopCategory" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="regular">Regular</option>
                             <option value="transport_hub">Transport Hub</option>
                             <option value="airport">Airport</option>
@@ -449,14 +442,14 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm text-slate-400 mb-2">Demand Multiplier</label>
-                        <input type="number" id="newStopMultiplier" value="1.0" step="0.1" min="0.5" max="3.0" class="w-full bg-slate-700 border border-slate-600 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <label class="block text-sm text-gray-600 font-medium mb-2">Demand Multiplier</label>
+                        <input type="number" id="newStopMultiplier" value="1.0" step="0.1" min="0.5" max="3.0" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
             </div>
             <div class="flex gap-3 mt-6">
-                <button onclick="closeAddStopModal()" class="flex-1 py-3 bg-slate-700 hover:bg-slate-600 rounded-xl font-medium transition">Cancel</button>
-                <button onclick="addNewStop()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl font-medium transition">Add Stop</button>
+                <button onclick="closeAddStopModal()" class="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-medium transition">Cancel</button>
+                <button onclick="addNewStop()" class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-medium transition shadow-lg shadow-blue-200">Add Stop</button>
             </div>
         </div>
     </div>
@@ -488,19 +481,19 @@
             tbody.innerHTML = busStops.map(stop => {
                 const categoryBadge = getCategoryBadge(stop.category);
                 return `
-                    <tr class="table-row border-b border-slate-700/50">
-                        <td class="px-6 py-4 text-slate-400">#${stop.bus_stop_id}</td>
-                        <td class="px-6 py-4 font-medium">${stop.name}</td>
-                        <td class="px-6 py-4 text-slate-400">${stop.district}</td>
+                    <tr class="table-row border-b border-gray-50">
+                        <td class="px-6 py-4 text-gray-400 text-sm">#${stop.bus_stop_id}</td>
+                        <td class="px-6 py-4 font-medium text-gray-900">${stop.name}</td>
+                        <td class="px-6 py-4 text-gray-500">${stop.district}</td>
                         <td class="px-6 py-4">${categoryBadge}</td>
                         <td class="px-6 py-4">
-                            <span class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full text-xs font-mono">${stop.demand_multiplier || 1.0}x</span>
+                            <span class="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-mono font-semibold">${stop.demand_multiplier || 1.0}x</span>
                         </td>
-                        <td class="px-6 py-4 text-slate-500 text-xs font-mono">${stop.lat.toFixed(4)}, ${stop.lon.toFixed(4)}</td>
+                        <td class="px-6 py-4 text-gray-400 text-xs font-mono">${stop.lat.toFixed(4)}, ${stop.lon.toFixed(4)}</td>
                         <td class="px-6 py-4">
                             <div class="flex gap-2">
-                                <button onclick="editStop(${stop.bus_stop_id})" class="p-2 hover:bg-slate-700 rounded-lg transition"><i class="ph ph-pencil text-slate-400"></i></button>
-                                <button onclick="deleteStop(${stop.bus_stop_id})" class="p-2 hover:bg-red-500/20 rounded-lg transition"><i class="ph ph-trash text-red-400"></i></button>
+                                <button onclick="editStop(${stop.bus_stop_id})" class="p-2 hover:bg-gray-100 rounded-lg transition"><i class="ph ph-pencil text-gray-500"></i></button>
+                                <button onclick="deleteStop(${stop.bus_stop_id})" class="p-2 hover:bg-red-50 rounded-lg transition"><i class="ph ph-trash text-red-500"></i></button>
                             </div>
                         </td>
                     </tr>
@@ -510,31 +503,28 @@
 
         function getCategoryBadge(category) {
             const badges = {
-                'transport_hub': '<span class="bg-orange-500/20 text-orange-400 px-2 py-1 rounded-full text-xs">🔥 Hub</span>',
-                'airport': '<span class="bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full text-xs">✈️ Airport</span>',
-                'commercial': '<span class="bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full text-xs">🏪 Commercial</span>',
-                'tourist': '<span class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full text-xs">🏖️ Tourist</span>',
-                'regular': '<span class="bg-slate-500/20 text-slate-400 px-2 py-1 rounded-full text-xs">Regular</span>'
+                'transport_hub': '<span class="bg-orange-100 text-orange-600 px-2 py-1 rounded-full text-xs font-semibold">🔥 Hub</span>',
+                'airport': '<span class="bg-purple-100 text-purple-600 px-2 py-1 rounded-full text-xs font-semibold">✈️ Airport</span>',
+                'commercial': '<span class="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-semibold">🏪 Commercial</span>',
+                'tourist': '<span class="bg-emerald-100 text-emerald-600 px-2 py-1 rounded-full text-xs font-semibold">🏖️ Tourist</span>',
+                'regular': '<span class="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-xs font-semibold">Regular</span>'
             };
             return badges[category] || badges['regular'];
         }
 
         // Section Navigation
         function showSection(section) {
-            // Hide all sections
             document.querySelectorAll('[id^="section-"]').forEach(el => el.classList.add('hidden'));
-            // Show selected section
             document.getElementById('section-' + section).classList.remove('hidden');
-            // Update nav links
             document.querySelectorAll('.sidebar-link').forEach(el => {
                 el.classList.remove('active');
-                el.classList.remove('text-slate-300');
-                el.classList.add('text-slate-400');
+                el.querySelector('i').classList.remove('text-blue-500');
+                el.querySelector('i').classList.add('text-gray-400');
             });
             const activeLink = document.getElementById('nav-' + section);
-            activeLink.classList.add('active', 'text-slate-300');
-            activeLink.classList.remove('text-slate-400');
-            // Update title
+            activeLink.classList.add('active');
+            activeLink.querySelector('i').classList.remove('text-gray-400');
+            activeLink.querySelector('i').classList.add('text-blue-500');
             const titles = { dashboard: 'Analytics Dashboard', stops: 'Manage Bus Stops', settings: 'System Configuration', users: 'User Management' };
             document.getElementById('sectionTitle').textContent = titles[section];
         }
@@ -551,18 +541,13 @@
             setTimeout(() => toast.classList.add('translate-y-20', 'opacity-0'), 3000);
         }
 
-        // Save Settings
         function saveSettings() { showToast('Settings saved successfully!'); }
-
-        // Add Stop
         function addNewStop() {
             const name = document.getElementById('newStopName').value;
             if (!name) return alert('Please enter a stop name');
             showToast('Stop "' + name + '" added successfully!');
             closeAddStopModal();
         }
-
-        // Delete Stop
         function deleteStop(id) {
             if (confirm('Are you sure you want to delete this stop?')) {
                 showToast('Stop deleted successfully!');
@@ -570,11 +555,8 @@
             }
         }
 
-        function logout() { if (confirm('Logout?')) window.location.href = '/'; }
-
         // Initialize Charts
         function initCharts() {
-            // Passenger Trends Chart
             new Chart(document.getElementById('passengerChart'), {
                 type: 'line',
                 data: {
@@ -594,30 +576,28 @@
                     responsive: true,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } },
-                        x: { ticks: { color: '#64748b' }, grid: { display: false } }
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#f1f5f9' } },
+                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
                     }
                 }
             });
 
-            // Route Distribution Chart
             new Chart(document.getElementById('routeDistributionChart'), {
                 type: 'doughnut',
                 data: {
                     labels: ['Ernakulam', 'Thiruvananthapuram', 'Kozhikode', 'Others'],
                     datasets: [{
                         data: [35, 28, 22, 15],
-                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#6366f1']
+                        backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6']
                     }]
                 },
                 options: {
                     responsive: true,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#94a3b8', padding: 12 } } },
+                    plugins: { legend: { position: 'bottom', labels: { color: '#64748b', padding: 12 } } },
                     cutout: '65%'
                 }
             });
 
-            // Peak Hours Chart
             new Chart(document.getElementById('peakHoursChart'), {
                 type: 'bar',
                 data: {
@@ -625,7 +605,7 @@
                     datasets: [{
                         label: 'Demand',
                         data: [120, 450, 280, 180, 220, 320, 480, 210],
-                        backgroundColor: ['#475569', '#3b82f6', '#475569', '#475569', '#475569', '#475569', '#3b82f6', '#475569'],
+                        backgroundColor: ['#e2e8f0', '#3b82f6', '#e2e8f0', '#e2e8f0', '#e2e8f0', '#e2e8f0', '#3b82f6', '#e2e8f0'],
                         borderRadius: 6
                     }]
                 },
@@ -633,14 +613,13 @@
                     responsive: true,
                     plugins: { legend: { display: false } },
                     scales: {
-                        y: { ticks: { color: '#64748b' }, grid: { color: '#334155' } },
-                        x: { ticks: { color: '#64748b' }, grid: { display: false } }
+                        y: { ticks: { color: '#94a3b8' }, grid: { color: '#f1f5f9' } },
+                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
                     }
                 }
             });
         }
 
-        // Init
         document.addEventListener('DOMContentLoaded', () => {
             loadStops();
             initCharts();
