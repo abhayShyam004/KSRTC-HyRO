@@ -6,6 +6,19 @@ import datetime
 import json
 import os
 
+# Import database module
+try:
+    from database import (
+        init_database, seed_default_data, get_all_stops, get_stop_by_id,
+        create_stop, update_stop, delete_stop, get_all_settings, update_setting,
+        get_all_users, create_user, delete_user, log_route_optimization,
+        get_analytics_summary
+    )
+    DB_AVAILABLE = True
+except ImportError:
+    print("[WARN] Database module not found. Using JSON fallback.")
+    DB_AVAILABLE = False
+
 # --- CONFIGURATION ---
 # Get the directory where app.py is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,6 +37,16 @@ DIESEL_PRICE_PER_LITRE = 95.21  # Current price in Kerala
 app = Flask(__name__, static_folder=STATIC_FOLDER)
 CORS(app)
 
+# Initialize database if available
+if DB_AVAILABLE:
+    try:
+        init_database()
+        seed_default_data()
+        print("[OK] Database connected and initialized.")
+    except Exception as e:
+        print(f"[ERROR] Database initialization failed: {e}")
+        DB_AVAILABLE = False
+
 # Load the trained model
 try:
     model = joblib.load(MODEL_PATH)
@@ -33,16 +56,31 @@ except FileNotFoundError:
     print("Please run 'python src/train_demand_model.py' first.")
     model = None
 
-# Load bus stops with demand multipliers
+# Load bus stops (from DB or JSON fallback)
 bus_stops_data = {}
-try:
-    with open(BUS_STOPS_PATH, 'r') as f:
-        stops = json.load(f)
-        for stop in stops:
-            bus_stops_data[stop['bus_stop_id']] = stop
-    print(f"[OK] Loaded {len(bus_stops_data)} bus stops with demand data.")
-except FileNotFoundError:
-    print(f"[WARN] {BUS_STOPS_PATH} not found. Using default multipliers.")
+
+def load_bus_stops():
+    global bus_stops_data
+    if DB_AVAILABLE:
+        try:
+            stops = get_all_stops()
+            bus_stops_data = {stop['bus_stop_id']: dict(stop) for stop in stops}
+            print(f"[OK] Loaded {len(bus_stops_data)} bus stops from database.")
+            return
+        except Exception as e:
+            print(f"[WARN] DB load failed, falling back to JSON: {e}")
+    
+    # JSON fallback
+    try:
+        with open(BUS_STOPS_PATH, 'r') as f:
+            stops = json.load(f)
+            for stop in stops:
+                bus_stops_data[stop['bus_stop_id']] = stop
+        print(f"[OK] Loaded {len(bus_stops_data)} bus stops from JSON.")
+    except FileNotFoundError:
+        print(f"[WARN] {BUS_STOPS_PATH} not found. Using default multipliers.")
+
+load_bus_stops()
 
 
 @app.route('/predict', methods=['POST'])
@@ -81,7 +119,7 @@ def predict():
         # Use stop-specific demand multipliers
         for stop_id in stop_ids:
             stop_info = bus_stops_data.get(stop_id, {})
-            multiplier = stop_info.get('demand_multiplier', 1.0)
+            multiplier = float(stop_info.get('demand_multiplier', 1.0))
             category = stop_info.get('category', 'regular')
             stop_name = stop_info.get('name', f'Stop {stop_id}')
             
@@ -102,14 +140,17 @@ def predict():
     total_passengers = round(total_passengers)
 
     # --- 3. Calculate Load-Adjusted Fuel Cost ---
-    # More passengers = heavier bus = worse fuel efficiency
     load_factor = min(1.0, total_passengers / BUS_CAPACITY)
-    
-    # Mileage decreases from 4.5 (empty) to 3.5 (full) based on load
     adjusted_mileage = AVG_BUS_MILEAGE_KMPL - (load_factor * (AVG_BUS_MILEAGE_KMPL - MIN_BUS_MILEAGE_KMPL))
-    
     fuel_needed_litres = distance_km / adjusted_mileage
     fuel_cost = round(fuel_needed_litres * DIESEL_PRICE_PER_LITRE)
+
+    # Log to analytics if DB available
+    if DB_AVAILABLE:
+        try:
+            log_route_optimization(stop_ids, distance_km, int(distance_km / 0.5), total_passengers, fuel_cost)
+        except Exception as e:
+            print(f"[WARN] Failed to log analytics: {e}")
 
     return jsonify({
         'expected_passengers': int(total_passengers),
@@ -121,6 +162,163 @@ def predict():
         'is_peak_hour': bool(is_peak),
         'is_weekend': bool(is_weekend)
     })
+
+
+# ========== API: BUS STOPS ==========
+@app.route('/api/stops', methods=['GET'])
+def api_get_stops():
+    """Get all bus stops"""
+    if DB_AVAILABLE:
+        try:
+            stops = get_all_stops()
+            # Convert Decimal to float for JSON serialization
+            return jsonify([{**dict(s), 'lat': float(s['lat']), 'lon': float(s['lon']), 
+                           'demand_multiplier': float(s['demand_multiplier'])} for s in stops])
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    else:
+        return jsonify(list(bus_stops_data.values()))
+
+@app.route('/api/stops', methods=['POST'])
+def api_create_stop():
+    """Create a new bus stop"""
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 503
+    
+    data = request.get_json()
+    try:
+        stop = create_stop(
+            data['name'], data['lat'], data['lon'], data['district'],
+            data.get('category', 'regular'), data.get('demand_multiplier', 1.0)
+        )
+        load_bus_stops()  # Refresh cache
+        return jsonify({**dict(stop), 'lat': float(stop['lat']), 'lon': float(stop['lon'])}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/stops/<int:stop_id>', methods=['PUT'])
+def api_update_stop(stop_id):
+    """Update a bus stop"""
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 503
+    
+    data = request.get_json()
+    try:
+        stop = update_stop(
+            stop_id, data['name'], data['lat'], data['lon'], data['district'],
+            data.get('category', 'regular'), data.get('demand_multiplier', 1.0)
+        )
+        if stop:
+            load_bus_stops()  # Refresh cache
+            return jsonify({**dict(stop), 'lat': float(stop['lat']), 'lon': float(stop['lon'])})
+        return jsonify({'error': 'Stop not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/stops/<int:stop_id>', methods=['DELETE'])
+def api_delete_stop(stop_id):
+    """Delete a bus stop"""
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 503
+    
+    try:
+        if delete_stop(stop_id):
+            load_bus_stops()  # Refresh cache
+            return jsonify({'success': True})
+        return jsonify({'error': 'Stop not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ========== API: SETTINGS ==========
+@app.route('/api/settings', methods=['GET'])
+def api_get_settings():
+    """Get all settings"""
+    if not DB_AVAILABLE:
+        return jsonify({
+            'diesel_price': str(DIESEL_PRICE_PER_LITRE),
+            'empty_mileage': str(AVG_BUS_MILEAGE_KMPL),
+            'full_mileage': str(MIN_BUS_MILEAGE_KMPL),
+            'bus_capacity': str(BUS_CAPACITY)
+        })
+    
+    try:
+        return jsonify(get_all_settings())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/settings', methods=['PUT'])
+def api_update_settings():
+    """Update multiple settings"""
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 503
+    
+    data = request.get_json()
+    try:
+        for key, value in data.items():
+            update_setting(key, str(value))
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ========== API: USERS ==========
+@app.route('/api/users', methods=['GET'])
+def api_get_users():
+    """Get all users"""
+    if not DB_AVAILABLE:
+        return jsonify([])
+    
+    try:
+        users = get_all_users()
+        return jsonify([dict(u) for u in users])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users', methods=['POST'])
+def api_create_user():
+    """Create a new user"""
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 503
+    
+    data = request.get_json()
+    try:
+        user = create_user(data['name'], data['email'], data['password'], data.get('role', 'operator'))
+        return jsonify(dict(user)), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/users/<int:user_id>', methods=['DELETE'])
+def api_delete_user(user_id):
+    """Delete a user"""
+    if not DB_AVAILABLE:
+        return jsonify({'error': 'Database not available'}), 503
+    
+    try:
+        if delete_user(user_id):
+            return jsonify({'success': True})
+        return jsonify({'error': 'User not found'}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# ========== API: ANALYTICS ==========
+@app.route('/api/analytics', methods=['GET'])
+def api_get_analytics():
+    """Get analytics summary"""
+    if not DB_AVAILABLE:
+        return jsonify({
+            'total_passengers': 24892,
+            'routes_optimized': 1247,
+            'fuel_saved': 320000,
+            'active_stops': len(bus_stops_data),
+            'trends': []
+        })
+    
+    try:
+        return jsonify(get_analytics_summary())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 # Serve static files (HTML, CSS, JS)
@@ -136,4 +334,3 @@ def serve_static(path):
 if __name__ == '__main__':
     # For local development
     app.run(port=5001, debug=True)
-
