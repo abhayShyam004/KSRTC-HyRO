@@ -32,8 +32,14 @@
         #pickerMap { z-index: 1;cursor: crosshair; }
         .leaflet-container { font-family: 'Inter', sans-serif !important; }
     </style>
+    <script>
+        // Immediate Auth Check
+        if (!localStorage.getItem('admin_token')) {
+            window.location.href = '/login.html';
+        }
+    </script>
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col" style="display: none;">
 
     <!-- ========== MOBILE HEADER ========== -->
     <div class="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-40">
@@ -436,26 +442,24 @@
         // ========== AUTHENTICATION ==========
         const token = localStorage.getItem('admin_token');
         
-        // Check authentication on page load
-        if (!token) {
-            window.location.href = '/login.html';
-        } else {
-            // Verify token is still valid
-            fetch('/api/auth/verify', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (!data.valid) {
-                    localStorage.removeItem('admin_token');
-                    window.location.href = '/login.html';
-                }
-            })
-            .catch(() => {
+        // Auth check passed in head, show content
+        document.body.style.display = '';
+
+        // Verify token is still valid
+        fetch('/api/auth/verify', {
+            headers: { 'Authorization': 'Bearer ' + token }
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (!data.valid) {
                 localStorage.removeItem('admin_token');
                 window.location.href = '/login.html';
-            });
-        }
+            }
+        })
+        .catch(() => {
+            localStorage.removeItem('admin_token');
+            window.location.href = '/login.html';
+        });
         
         // Helper function for authenticated API requests
         async function apiRequest(url, options = {}) {

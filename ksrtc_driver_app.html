@@ -38,243 +38,188 @@
             /* Hide desktop sidebar on mobile */
             .sidebar-main { display: none !important; }
             
-            /* Mobile Dashboard - Full screen by default */
-            .mobile-dashboard {
+            /* Hide desktop main content wrapper behavior, but keep map visible */
+            #mainContent { 
+                position: fixed !important;
+                top: 0; left: 0; right: 0; bottom: 0;
+                z-index: 0;
+            }
+            #map { height: 100% !important; width: 100% !important; }
+
+            /* Mobile Top Bar (Floating) */
+            .mobile-top-bar {
                 display: flex !important;
                 position: fixed;
-                top: 0; left: 0; right: 0; bottom: 0;
-                background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%);
+                top: 16px; left: 16px; right: 16px;
                 z-index: 100;
-                flex-direction: column;
-                overflow-y: auto;
+                gap: 12px;
+                pointer-events: none; /* Let clicks pass through around elements */
             }
-            .mobile-dashboard.hidden { display: none !important; }
-            
-            /* Mobile Map View - Hidden by default */
-            .mobile-map-view {
-                display: none !important;
-            }
-            .mobile-map-view.active {
-                display: block !important;
-                position: fixed;
-                top: 0; left: 0; right: 0; bottom: 0;
-                z-index: 90;
-            }
-            
-            /* Mobile Map Controls - only show when map is active */
-            .mobile-map-controls {
-                display: none !important;
-            }
-            .mobile-map-view.active .mobile-map-controls {
-                display: flex !important;
-                position: fixed;
-                top: 12px;
-                left: 12px;
-                right: 12px;
-                z-index: 100;
-                justify-content: space-between;
-            }
-            .mobile-map-btn {
-                width: 44px;
-                height: 44px;
+            .mobile-search-container {
+                flex: 1;
+                pointer-events: auto;
                 background: white;
                 border-radius: 12px;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                display: flex;
+                align-items: center;
+                padding: 0 12px;
+                height: 48px;
+            }
+            .mobile-menu-btn {
+                pointer-events: auto;
+                width: 48px; height: 48px;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                border: none;
-                cursor: pointer;
+                color: #374151;
+                text-decoration: none;
             }
-            
-            /* Mobile Route Builder Drawer */
-            .mobile-drawer {
+
+            /* Bottom Sheet */
+            .mobile-bottom-sheet {
+                display: flex !important;
+                flex-direction: column;
                 position: fixed;
                 bottom: 0; left: 0; right: 0;
-                max-height: 70vh;
                 background: white;
                 border-radius: 24px 24px 0 0;
                 box-shadow: 0 -4px 20px rgba(0,0,0,0.15);
-                z-index: 110;
-                transform: translateY(100%);
-                transition: transform 0.3s ease;
-                overflow-y: auto;
+                z-index: 100;
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                max-height: 85vh;
+                transform: translateY(calc(100% - 180px)); /* Default collapsed state showing just header + quick stats */
             }
-            .mobile-drawer.open { transform: translateY(0); }
-            .mobile-drawer-handle {
+            .mobile-bottom-sheet.expanded {
+                transform: translateY(0);
+            }
+            
+            .sheet-handle-bar {
+                width: 100%;
+                padding: 12px 0;
+                display: flex;
+                justify-content: center;
+                cursor: grab;
+            }
+            .sheet-handle {
                 width: 40px;
                 height: 4px;
-                background: #d1d5db;
+                background: #e5e7eb;
                 border-radius: 2px;
-                margin: 12px auto;
             }
-            
-            /* Hide desktop main content */
-            #mainContent { display: none !important; }
-            
-            /* Mobile overlay */
-            .mobile-overlay {
-                display: none;
-                position: fixed;
-                top: 0; left: 0; right: 0; bottom: 0;
-                background: rgba(0,0,0,0.5);
-                z-index: 105;
+
+            .sheet-content {
+                padding: 0 20px 20px 20px;
+                overflow-y: auto;
+                flex: 1;
             }
-            .mobile-overlay.active { display: block; }
+
+            /* Hide old mobile elements and desktop controls */
+            .mobile-dashboard, .mobile-map-view, .mobile-drawer, .mobile-map-controls, .map-controls { display: none !important; }
             
-            /* Toast position on mobile */
+            /* Adjust Toast position */
             #toastContainer {
-                right: 12px !important;
-                bottom: 80px !important;
-                left: 12px !important;
-                z-index: 200 !important;
+                bottom: 24px !important; /* At bottom of screen, overlaying sheet */
+                left: 16px !important;
+                right: 16px !important;
+                transition: bottom 0.3s ease-in-out;
+            }
+            #toastContainer.toast-on-panel {
+                bottom: 24px !important; /* At bottom when panel is open */
             }
         }
         
         /* Hide mobile elements on desktop */
-        .mobile-dashboard, .mobile-map-view, .mobile-drawer, .mobile-map-controls { display: none; }
+        .mobile-top-bar, .mobile-bottom-sheet { display: none; }
+
+        @keyframes slideInBottom {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .slide-in-bottom {
+            animation: slideInBottom 0.3s ease-out forwards;
+            opacity: 0; /* Start hidden */
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden text-gray-800 relative">
 
-    <!-- ========== MOBILE DASHBOARD (Shown First) ========== -->
-    <div id="mobileDashboard" class="mobile-dashboard">
-        <!-- Header -->
-        <div class="px-5 pt-8 pb-4">
-            <div class="flex items-center justify-between mb-2">
-                <div class="flex items-center gap-3">
-                    <div class="h-12 w-12 bg-blue-500 rounded-xl flex items-center justify-center shadow-lg">
-                        <i class="ph ph-bus text-white text-2xl"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-2xl font-bold text-white">KSRTC-HyRO</h1>
-                        <p class="text-blue-300 text-sm">Route Optimizer</p>
-                    </div>
-                </div>
-                <a href="/admin.html" class="h-10 w-10 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center transition" title="Admin Panel">
-                    <i class="ph ph-gear-six text-white text-xl"></i>
-                </a>
-            </div>
+    <!-- ========== MOBILE TOP BAR ========== -->
+    <div class="mobile-top-bar">
+        <div class="mobile-search-container">
+            <i class="ph ph-magnifying-glass text-gray-400 text-lg mr-3"></i>
+            <input id="mobileStopSearch" class="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-800 placeholder-gray-400" placeholder="Search stop (e.g. Aluva)...">
+            <button id="mobileAddStopBtn" class="p-2 text-blue-600 font-medium text-sm">Add</button>
+        </div>
+        <a href="/admin.html" class="mobile-menu-btn">
+            <i class="ph ph-gear-six text-xl"></i>
+        </a>
+    </div>
+
+    <!-- ========== MOBILE BOTTOM SHEET ========== -->
+    <div id="mobileBottomSheet" class="mobile-bottom-sheet">
+        <div class="sheet-handle-bar" onclick="toggleBottomSheet()">
+            <div class="sheet-handle"></div>
         </div>
         
-        <!-- Route Builder Card -->
-        <div class="flex-1 px-4 pb-4 overflow-y-auto">
-            <div class="bg-white/10 backdrop-blur rounded-2xl p-4 mb-4 relative z-10">
-                <label class="block text-xs font-semibold text-blue-200 uppercase tracking-wide mb-3">Build Your Route</label>
-                <div class="relative mb-3">
-                    <input id="mobileStopSearch" class="w-full pl-10 pr-4 py-3 bg-white/20 border border-white/10 rounded-xl text-sm text-white placeholder-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:bg-white/30 transition" placeholder="Search stop (e.g. Aluva)...">
-                    <i class="ph ph-magnifying-glass absolute left-3.5 top-3.5 text-blue-200 text-lg"></i>
+        <div class="sheet-content">
+            <!-- Header / Summary (Always Visible-ish) -->
+            <div class="flex items-center justify-between mb-4" onclick="toggleBottomSheet()">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-900">Current Route</h2>
+                    <p id="mobileStopCount" class="text-sm text-gray-500">0 Stops added</p>
                 </div>
-                <button id="mobileAddStopBtn" class="w-full py-3 bg-blue-500 hover:bg-blue-400 text-white font-semibold rounded-xl transition flex items-center justify-center gap-2">
-                    <i class="ph ph-plus-circle text-lg"></i> Add Stop
-                </button>
+                <div class="flex items-center gap-2">
+                    <button id="mobileToggleStopsBtn" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
+                        <i class="ph ph-map-pin"></i> Show Stops
+                    </button>
+                    <button id="mobileOptimizeBtn" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-blue-200 flex items-center gap-2">
+                        <i class="ph ph-lightning"></i> Optimize
+                    </button>
+                </div>
             </div>
-            
-            <!-- Current Route -->
-            <div class="bg-white/10 backdrop-blur rounded-2xl p-4 mb-4">
-                <div class="flex items-center justify-between mb-3">
-                    <label class="text-xs font-semibold text-blue-200 uppercase tracking-wide">Current Route</label>
-                    <span id="mobileStopCount" class="px-2 py-0.5 bg-blue-500/50 text-white text-xs font-bold rounded-full">0 Stops</span>
+
+            <!-- Quick Stats Row -->
+            <div class="grid grid-cols-4 gap-2 mb-6">
+                <div class="bg-gray-50 rounded-xl p-2 text-center">
+                    <i class="ph ph-clock text-orange-500 text-lg mb-1"></i>
+                    <p id="mobileValDuration" class="text-xs font-bold text-gray-900">--</p>
                 </div>
-                <ul id="mobileRouteList" class="space-y-2 min-h-[80px] max-h-[200px] overflow-y-auto">
-                    <li class="text-center py-6 border-2 border-dashed border-white/20 rounded-xl">
-                        <p class="text-sm text-blue-200">No stops added yet</p>
+                <div class="bg-gray-50 rounded-xl p-2 text-center">
+                    <i class="ph ph-path text-emerald-500 text-lg mb-1"></i>
+                    <p id="mobileValDistance" class="text-xs font-bold text-gray-900">--</p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-2 text-center">
+                    <i class="ph ph-users text-blue-500 text-lg mb-1"></i>
+                    <p id="mobileValPassengers" class="text-xs font-bold text-gray-900">--</p>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-2 text-center">
+                    <i class="ph ph-gas-pump text-red-500 text-lg mb-1"></i>
+                    <p id="mobileValCost" class="text-xs font-bold text-gray-900">--</p>
+                </div>
+            </div>
+
+            <!-- Route List (Scrollable) -->
+            <div class="space-y-3 pb-6">
+                <h3 class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Stops Sequence</h3>
+                <ul id="mobileRouteList" class="space-y-2">
+                    <li class="text-center py-8 border-2 border-dashed border-gray-100 rounded-xl">
+                        <p class="text-sm text-gray-400">No stops added yet</p>
                     </li>
                 </ul>
             </div>
-            
-            <!-- Quick Stats -->
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
-                    <i class="ph ph-clock text-orange-400 text-2xl mb-1"></i>
-                    <p id="mobileValDuration" class="text-xl font-bold text-white">--</p>
-                    <p class="text-xs text-blue-200">Est. Time</p>
-                </div>
-                <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
-                    <i class="ph ph-path text-emerald-400 text-2xl mb-1"></i>
-                    <p id="mobileValDistance" class="text-xl font-bold text-white">--</p>
-                    <p class="text-xs text-blue-200">Distance</p>
-                </div>
-                <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
-                    <i class="ph ph-users text-blue-400 text-2xl mb-1"></i>
-                    <p id="mobileValPassengers" class="text-xl font-bold text-white">--</p>
-                    <p class="text-xs text-blue-200">Passengers</p>
-                </div>
-                <div class="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
-                    <i class="ph ph-gas-pump text-red-400 text-2xl mb-1"></i>
-                    <p id="mobileValCost" class="text-xl font-bold text-white">--</p>
-                    <p class="text-xs text-blue-200">Fuel Cost</p>
-                </div>
-            </div>
         </div>
-        
-        <!-- Optimize Button -->
-        <div class="p-4 bg-gradient-to-t from-slate-900/50 to-transparent">
-            <button id="mobileOptimizeBtn" class="w-full py-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white font-bold text-lg rounded-2xl shadow-lg shadow-blue-500/30 transition transform active:scale-95 flex items-center justify-center gap-3">
-                <i class="ph ph-lightning text-2xl"></i> Optimize Route
-            </button>
-            <p id="mobileStatus" class="text-xs text-center text-blue-300 mt-3">Add stops to begin</p>
-        </div>
-    </div>
-
-    <!-- ========== MOBILE MAP VIEW (Shown After Optimize) ========== -->
-    <div id="mobileMapView" class="mobile-map-view">
-        <div id="mobileMap" class="w-full h-full"></div>
-        
-        <!-- Map Controls: Top Left & Right -->
-        <div class="mobile-map-controls">
-            <button id="mobileMenuBtn" class="mobile-map-btn" onclick="openMobileDrawer()">
-                <i class="ph ph-list text-xl text-gray-700"></i>
-            </button>
-            <div class="flex gap-2">
-                <button id="mobileShowStopsBtn" class="mobile-map-btn" onclick="toggleMobileAllStops()">
-                    <i class="ph ph-map-pin text-xl text-gray-700"></i>
-                </button>
-                <button class="mobile-map-btn" onclick="closeMobileMapView()">
-                    <i class="ph ph-x text-xl text-gray-700"></i>
-                </button>
-            </div>
-        </div>
-        
-        <!-- Bottom Metrics Bar -->
-        <div class="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md rounded-t-2xl shadow-2xl p-4 z-110">
-            <div class="flex justify-around text-center">
-                <div>
-                    <p id="mobileMapDuration" class="text-lg font-bold text-gray-800">--</p>
-                    <p class="text-[10px] text-gray-500 uppercase">Duration</p>
-                </div>
-                <div class="border-l border-gray-200 pl-4">
-                    <p id="mobileMapDistance" class="text-lg font-bold text-gray-800">--</p>
-                    <p class="text-[10px] text-gray-500 uppercase">Distance</p>
-                </div>
-                <div class="border-l border-gray-200 pl-4">
-                    <p id="mobileMapPassengers" class="text-lg font-bold text-gray-800">--</p>
-                    <p class="text-[10px] text-gray-500 uppercase">Passengers</p>
-                </div>
-                <div class="border-l border-gray-200 pl-4">
-                    <p id="mobileMapCost" class="text-lg font-bold text-gray-800">--</p>
-                    <p class="text-[10px] text-gray-500 uppercase">Fuel</p>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========== MOBILE DRAWER (Route Editor on Map) ========== -->
-    <div id="mobileDrawer" class="mobile-drawer">
-        <div class="mobile-drawer-handle"></div>
-        <div class="px-4 pb-6">
-            <h3 class="font-bold text-gray-800 mb-3">Edit Route</h3>
-            <ul id="mobileDrawerRouteList" class="space-y-2 max-h-[40vh] overflow-y-auto"></ul>
-            <button onclick="closeMobileDrawer()" class="mt-4 w-full py-3 bg-blue-600 text-white font-semibold rounded-xl">Done</button>
-        </div>
-    </div>
-
-    <!-- Mobile Overlay -->
-    <div id="mobileOverlay" class="mobile-overlay" onclick="closeMobileDrawer()"></div>
-
-    <!-- ========== SAVINGS CARD (Fixed Bottom Left) ========== -->
-    <div id="savingsCard" class="fixed bottom-6 z-[1000] bg-white text-gray-800 rounded-xl shadow-2xl border border-gray-100 p-4 w-72 transform transition-all duration-300 hidden pointer-events-auto" style="left: 26rem;">
-        <!-- Content injected by JS -->
     </div>
 
 
@@ -329,7 +274,7 @@
         </div>
     </aside>
 
-    <aside id="stopsPanel" class="fixed right-0 top-0 h-full w-80 bg-white shadow-2xl z-30 transform translate-x-full transition-transform duration-300 flex flex-col border-l border-gray-200">
+    <aside id="stopsPanel" class="fixed right-0 top-0 h-full w-full md:w-80 bg-white shadow-2xl z-[110] transform translate-x-full transition-transform duration-300 flex flex-col border-l border-gray-200">
         <div class="px-5 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
             <div>
                 <h3 class="font-bold text-gray-800">Network Stops</h3>
@@ -366,10 +311,6 @@
                         <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Total Distance</p><p id="valDistance" class="text-lg font-bold text-gray-800 leading-none mt-0.5">-- km</p></div>
                     </div>
                     <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
-                        <div class="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-4 shadow-sm"><i class="ph ph-users text-xl"></i></div>
-                        <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Passenger Demand</p><p id="valPassengers" class="text-lg font-bold text-gray-800 leading-none mt-0.5">~0</p></div>
-                    </div>
-                    <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
                         <div class="h-10 w-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center mr-4 shadow-sm"><i class="ph ph-gas-pump text-xl"></i></div>
                         <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Fuel Cost</p><p id="valCost" class="text-lg font-bold text-gray-800 leading-none mt-0.5">₹0</p></div>
                     </div>
@@ -380,161 +321,134 @@
     </main>
 
     <!-- TOAST CONTAINER -->
-    <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col space-y-3 pointer-events-none"></div>
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-[120] flex flex-col space-y-3 pointer-events-none"></div>
 
     <script>
+        // --- API CONFIGURATION ---
+        // Determine backend URL based on current location
+        const getApiBaseUrl = () => {
+            const host = window.location.hostname;
+            // Handle file:// protocol (opening HTML directly)
+            if (window.location.protocol === 'file:' || !host) {
+                return 'http://localhost:5001';
+            }
+            // If running locally (localhost or 127.0.0.1), assume backend is on port 5001
+            if (host === 'localhost' || host === '127.0.0.1') {
+                return `http://${host}:5001`;
+            }
+            // If running on a network IP (e.g. 192.168.x.x), assume backend is on same IP port 5001
+            if (host.match(/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/)) {
+                return `http://${host}:5001`;
+            }
+            // Otherwise (production/deployed), use relative path or same origin
+            return '';
+        };
+        const API_BASE_URL = getApiBaseUrl();
+
+        // --- GLOBAL STATE ---
+        let map;
+        let routeLayer;
+        let currentRoute = [];
+        let markers = [];
         let busStops = [];
+        let areAllStopsVisible = false;
+        let allStopsLayer = null;
+        let originalPolyline = null;
+        let optimizedPolyline = null;
+        let originalRouteGeoJSON = null;
+        let optimizedRouteGeoJSON = null;
+        let originalRouteStats = null;
+        let optimizedRouteStats = null;
+        let awesomplete;
+        
+        // --- DESKTOP ELEMENTS ---
         const stopSearchInput = document.getElementById('stopSearch');
         const addStopBtn = document.getElementById('addStopBtn');
-        const routeListUl = document.getElementById('routeList');
         const getRouteBtn = document.getElementById('getRouteBtn');
-        const toggleStopsBtn = document.getElementById('toggleStopsBtn');
-        const statusMsg = document.getElementById('statusMsg');
+        const routeListUl = document.getElementById('routeList');
         const stopCountBadge = document.getElementById('stopCountBadge');
+        const statusMsg = document.getElementById('statusMsg');
         const metricsPanel = document.getElementById('metricsPanel');
-        
+        const toggleStopsBtn = document.getElementById('toggleStopsBtn');
         const stopsPanel = document.getElementById('stopsPanel');
         const stopsList = document.getElementById('stopsList');
         const totalStopsCount = document.getElementById('totalStopsCount');
         const sidebarSearch = document.getElementById('sidebarSearch');
         const toastContainer = document.getElementById('toastContainer');
-        
-        let map;
-        let routeLayer;
-        let currentRoute = [];
-        let markers = [];
-        let awesomplete;
-        let allStopsLayer = null;
-        let areAllStopsVisible = false;
-
-        // --- API CONFIGURATION ---
-        // Auto-detect: localhost uses port 5001, production uses same origin
-        const API_BASE_URL = window.location.hostname === 'localhost' 
-            ? 'http://localhost:5001' 
-            : '';  // Empty string means same origin on Render
 
         // --- MOBILE ELEMENTS ---
-        const mobileDashboard = document.getElementById('mobileDashboard');
-        const mobileMapView = document.getElementById('mobileMapView');
-        const mobileDrawer = document.getElementById('mobileDrawer');
-        const mobileOverlay = document.getElementById('mobileOverlay');
         const mobileStopSearch = document.getElementById('mobileStopSearch');
         const mobileAddStopBtn = document.getElementById('mobileAddStopBtn');
-        const mobileOptimizeBtn = document.getElementById('mobileOptimizeBtn');
         const mobileRouteList = document.getElementById('mobileRouteList');
         const mobileStopCount = document.getElementById('mobileStopCount');
-        const mobileStatus = document.getElementById('mobileStatus');
-        let mobileMap = null;
-        let mobileRouteLayer = null;
-        let mobileMarkers = [];
+        const mobileOptimizeBtn = document.getElementById('mobileOptimizeBtn');
         let mobileAwesomplete = null;
-        let mobileAllStopsLayer = null;
-        let mobileAllStopsVisible = false;
 
-        // --- MOBILE MAP FUNCTIONS ---
-        function initMobileMap() {
-            if (mobileMap) return;
-            mobileMap = L.map('mobileMap').setView([10.0, 76.3], 9);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                maxZoom: 19,
-                attribution: '© OpenStreetMap'
-            }).addTo(mobileMap);
+        // --- MOBILE UI UPDATES ---
+        function updateMobileStats(duration, distance, passengers, cost) {
+            const els = {
+                dur: document.getElementById('mobileValDuration'),
+                dist: document.getElementById('mobileValDistance'),
+                pass: document.getElementById('mobileValPassengers'),
+                cost: document.getElementById('mobileValCost')
+            };
+            if(els.dur) els.dur.innerText = Math.round(duration) + ' min';
+            if(els.dist) els.dist.innerText = distance.toFixed(1) + ' km';
+            if(els.pass) els.pass.innerText = passengers || '--';
+            if(els.cost) els.cost.innerText = '₹' + (cost || '--');
         }
 
-        function showMobileMapView() {
-            mobileDashboard.classList.add('hidden');
-            mobileMapView.classList.add('active');
-            initMobileMap();
-            setTimeout(() => mobileMap.invalidateSize(), 100);
-        }
-
-        function closeMobileMapView() {
-            mobileMapView.classList.remove('active');
-            mobileDashboard.classList.remove('hidden');
-        }
-
-        function openMobileDrawer() {
-            renderMobileDrawerRouteList();
-            mobileDrawer.classList.add('open');
-            mobileOverlay.classList.add('active');
-        }
-
-        function closeMobileDrawer() {
-            mobileDrawer.classList.remove('open');
-            mobileOverlay.classList.remove('active');
-        }
-
-        function toggleMobileAllStops() {
-            if (!mobileAllStopsVisible) {
-                if (!mobileAllStopsLayer) {
-                    const allMarkers = busStops.map(stop => {
-                        return L.circleMarker([stop.lat, stop.lon], {
-                            radius: 6, color: '#475569', weight: 2, fillColor: '#94a3b8', fillOpacity: 0.9
-                        }).bindTooltip(stop.name, { direction: 'top', offset: [0, -5] });
-                    });
-                    mobileAllStopsLayer = L.layerGroup(allMarkers);
-                }
-                mobileMap.addLayer(mobileAllStopsLayer);
-            } else {
-                if (mobileAllStopsLayer) mobileMap.removeLayer(mobileAllStopsLayer);
-            }
-            mobileAllStopsVisible = !mobileAllStopsVisible;
-        }
-
-        // --- MOBILE ROUTE LIST ---
         function renderMobileRouteList() {
             if (!mobileRouteList) return;
-            mobileStopCount.innerText = currentRoute.length + ' Stops';
+            if (mobileStopCount) mobileStopCount.innerText = currentRoute.length + ' Stops';
+            
             if (currentRoute.length === 0) {
-                mobileRouteList.innerHTML = '<li class="text-center py-6 border-2 border-dashed border-white/20 rounded-xl"><p class="text-sm text-blue-200">No stops added yet</p></li>';
-                mobileStatus.textContent = 'Add stops to begin';
+                mobileRouteList.innerHTML = '<li class="text-center py-6 border-2 border-dashed border-gray-100 rounded-xl"><p class="text-sm text-gray-400">No stops added yet</p></li>';
                 return;
             }
-            mobileStatus.textContent = currentRoute.length + ' stops ready';
-            mobileRouteList.innerHTML = currentRoute.map((stop, i) => `
-                <li class="flex items-center justify-between p-3 bg-white/20 rounded-xl">
-                    <div class="flex items-center gap-2">
-                        <span class="w-6 h-6 rounded-full ${i === 0 ? 'bg-green-500' : i === currentRoute.length - 1 ? 'bg-red-500' : 'bg-blue-500'} text-white text-xs flex items-center justify-center font-bold">${i + 1}</span>
-                        <span class="text-sm text-white truncate max-w-[150px]">${stop.name}</span>
+            
+            mobileRouteList.innerHTML = currentRoute.map((stop, i) => {
+                let dotClass = 'bg-gray-300';
+                let labelText = 'WAYPOINT';
+                
+                if (i === 0) { 
+                    dotClass = 'bg-green-500'; 
+                    labelText = 'START'; 
+                } else if (i === currentRoute.length - 1) { 
+                    dotClass = 'bg-red-500'; 
+                    labelText = 'END'; 
+                }
+                
+                return `
+                <li class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 slide-in-bottom" style="animation-delay: ${i * 50}ms">
+                    <div class="flex flex-col gap-1 overflow-hidden">
+                        <div class="flex items-center gap-1.5">
+                            <div class="w-2 h-2 rounded-full ${dotClass}"></div>
+                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">${labelText}</span>
+                        </div>
+                        <span class="text-sm font-medium text-gray-800 truncate pl-3.5">${stop.name}</span>
                     </div>
-                    <button onclick="removeStopMobile(${i})" class="text-red-300 hover:text-red-100">
+                    <button onclick="removeStopMobile(${i})" class="h-8 w-8 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition flex items-center justify-center flex-shrink-0">
                         <i class="ph ph-trash text-lg"></i>
                     </button>
                 </li>
-            `).join('');
-        }
-
-        function renderMobileDrawerRouteList() {
-            const list = document.getElementById('mobileDrawerRouteList');
-            if (currentRoute.length === 0) {
-                list.innerHTML = '<li class="text-center py-4 text-gray-400">No stops</li>';
-                return;
-            }
-            list.innerHTML = currentRoute.map((stop, i) => `
-                <li class="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
-                    <div class="flex items-center gap-2">
-                        <span class="w-6 h-6 rounded-full ${i === 0 ? 'bg-green-500' : i === currentRoute.length - 1 ? 'bg-red-500' : 'bg-blue-500'} text-white text-xs flex items-center justify-center font-bold">${i + 1}</span>
-                        <span class="text-sm text-gray-700">${stop.name}</span>
-                    </div>
-                    <button onclick="removeStopMobile(${i})" class="text-red-400 hover:text-red-600">
-                        <i class="ph ph-trash text-lg"></i>
-                    </button>
-                </li>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function removeStopMobile(index) {
-            currentRoute.splice(index, 1);
-            renderMobileRouteList();
-            renderMobileDrawerRouteList();
-            renderRouteList(); // Sync desktop
+            const stop = currentRoute[index];
+            if(stop) {
+                currentRoute.splice(index, 1);
+                renderRouteList(); // Updates both
+            }
         }
 
         // --- MOBILE AUTOCOMPLETE ---
         function setupMobileAutocomplete() {
             if (!mobileStopSearch) return;
+            if (typeof Awesomplete === 'undefined') return;
             
-            // Create list with labels that include badges
             const stopList = busStops.map(s => {
                 let badge = '';
                 const isAirport = s.category === 'airport' || s.name.toLowerCase().includes('airport');
@@ -548,24 +462,21 @@
                 return { label: s.name + badge, value: s.name };
             });
             
-            mobileAwesomplete = new Awesomplete(mobileStopSearch, {
-                list: stopList,
-                minChars: 1,
-                maxItems: 6,
-                autoFirst: true,
-                filter: function(text, input) {
-                    return text.value.toLowerCase().includes(input.toLowerCase());
-                },
-                item: function(text, input) {
-                    const li = document.createElement('li');
-                    li.innerHTML = text.label;
-                    li.setAttribute('aria-selected', 'false');
-                    return li;
-                },
-                replace: function(text) {
-                    this.input.value = text.value;
-                }
-            });
+            if (mobileAwesomplete) {
+                mobileAwesomplete.list = stopList;
+            } else {
+                mobileAwesomplete = new Awesomplete(mobileStopSearch, {
+                    list: stopList, minChars: 1, maxItems: 6, autoFirst: true,
+                    filter: (text, input) => text.value.toLowerCase().includes(input.toLowerCase()),
+                    item: function(text, input) {
+                        const li = document.createElement('li');
+                        li.innerHTML = text.label;
+                        li.setAttribute('aria-selected', 'false');
+                        return li;
+                    },
+                    replace: function(text) { this.input.value = text.value; }
+                });
+            }
         }
 
         function mobileAddStop() {
@@ -573,94 +484,15 @@
             if (!stopName) { showToast("Enter a stop name", 'error'); return; }
             const stop = busStops.find(s => s.name === stopName);
             if (!stop) { showToast("Stop not found", 'error'); return; }
-            if (currentRoute.some(s => s.bus_stop_id === stop.bus_stop_id)) {
-                showToast("Stop already added", 'error'); return;
-            }
-            currentRoute.push(stop);
+            addStopToRoute(stop);
             mobileStopSearch.value = '';
-            renderMobileRouteList();
-            renderRouteList(); // Sync desktop
-            showToast("Added: " + stop.name, 'success');
         }
 
-        // --- MOBILE OPTIMIZE ---
-        async function mobileHandleOptimize() {
-            if (currentRoute.length < 2) {
-                showToast("Add at least 2 stops", 'error');
-                return;
+        function toggleBottomSheet() {
+            const sheet = document.getElementById('mobileBottomSheet');
+            if(sheet) {
+                sheet.classList.toggle('expanded');
             }
-            mobileOptimizeBtn.disabled = true;
-            mobileOptimizeBtn.innerHTML = '<i class="ph ph-spinner animate-spin text-2xl"></i> Optimizing...';
-
-            const coords = currentRoute.map(stop => `${stop.lon.toFixed(5)},${stop.lat.toFixed(5)}`).join(';');
-            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson&overview=full`;
-
-            try {
-                const osrmResponse = await fetch(osrmUrl);
-                if (!osrmResponse.ok) throw new Error('Routing failed');
-                const routeData = await osrmResponse.json();
-                if (!routeData.routes || routeData.routes.length === 0) throw new Error('No route found');
-                const route = routeData.routes[0];
-                const distance = route.distance / 1000;
-                const duration = route.duration / 60;
-
-                const predictionResponse = await fetch(`${API_BASE_URL}/predict`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ distance_km: distance, num_stops: currentRoute.length, stop_ids: currentRoute.map(s => s.bus_stop_id) })
-                });
-                let passengers = 0, fuelCost = 0;
-                if (predictionResponse.ok) {
-                    const predictionData = await predictionResponse.json();
-                    passengers = predictionData.expected_passengers;
-                    fuelCost = predictionData.estimated_fuel_cost_inr;
-                }
-
-                // Update dashboard stats
-                document.getElementById('mobileValDuration').innerText = Math.round(duration) + ' min';
-                document.getElementById('mobileValDistance').innerText = distance.toFixed(1) + ' km';
-                document.getElementById('mobileValPassengers').innerText = passengers || '--';
-                document.getElementById('mobileValCost').innerText = '₹' + (fuelCost || '--');
-
-                // Update map view stats
-                document.getElementById('mobileMapDuration').innerText = Math.round(duration) + ' min';
-                document.getElementById('mobileMapDistance').innerText = distance.toFixed(1) + ' km';
-                document.getElementById('mobileMapPassengers').innerText = passengers || '--';
-                document.getElementById('mobileMapCost').innerText = '₹' + (fuelCost || '--');
-
-                // Show map & draw route
-                showMobileMapView();
-                updateMobileMap(route);
-                showToast("Route optimized!", 'success');
-
-            } catch (error) {
-                showToast("Optimization failed: " + error.message, 'error');
-            } finally {
-                mobileOptimizeBtn.disabled = false;
-                mobileOptimizeBtn.innerHTML = '<i class="ph ph-lightning text-2xl"></i> Optimize Route';
-            }
-        }
-
-        function updateMobileMap(route) {
-            if (mobileRouteLayer) mobileMap.removeLayer(mobileRouteLayer);
-            mobileMarkers.forEach(m => mobileMap.removeLayer(m));
-            mobileMarkers = [];
-
-            const routeGeometry = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-            mobileRouteLayer = L.polyline(routeGeometry, { color: '#2563eb', weight: 6, opacity: 0.8, lineJoin: 'round' }).addTo(mobileMap);
-
-            currentRoute.forEach((stop, index) => {
-                let color = '#3b82f6';
-                if (index === 0) color = '#22c55e';
-                else if (index === currentRoute.length - 1) color = '#ef4444';
-                const customIcon = L.divIcon({
-                    className: 'custom-div-icon',
-                    html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 6px rgba(0,0,0,0.4);"></div>`,
-                    iconSize: [20, 20], iconAnchor: [10, 10]
-                });
-                const marker = L.marker([stop.lat, stop.lon], { icon: customIcon }).addTo(mobileMap).bindPopup(stop.name);
-                mobileMarkers.push(marker);
-            });
-            mobileMap.fitBounds(mobileRouteLayer.getBounds(), { padding: [50, 50] });
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
@@ -677,7 +509,31 @@
             // Mobile event listeners
             setupMobileAutocomplete();
             if (mobileAddStopBtn) mobileAddStopBtn.addEventListener('click', mobileAddStop);
-            if (mobileOptimizeBtn) mobileOptimizeBtn.addEventListener('click', mobileHandleOptimize);
+            
+            const mobileToggleStopsBtn = document.getElementById('mobileToggleStopsBtn');
+            if (mobileToggleStopsBtn) mobileToggleStopsBtn.addEventListener('click', toggleAllStops);
+
+            if (mobileOptimizeBtn) {
+                mobileOptimizeBtn.addEventListener('click', async () => {
+                    // Set loading state
+                    const originalText = mobileOptimizeBtn.innerHTML;
+                    mobileOptimizeBtn.disabled = true;
+                    mobileOptimizeBtn.innerHTML = '<i class="ph ph-circle-notch" style="animation: spin 1s linear infinite; display: inline-block;"></i> Optimizing...';
+                    
+                    try {
+                        await handleGetRoute();
+                        // Collapse sheet to show map result
+                        const sheet = document.getElementById('mobileBottomSheet');
+                        if(sheet) sheet.classList.remove('expanded');
+                    } catch (e) {
+                        console.error("Mobile optimization failed", e);
+                    } finally {
+                        // Reset state
+                        mobileOptimizeBtn.disabled = false;
+                        mobileOptimizeBtn.innerHTML = originalText;
+                    }
+                });
+            }
         });
 
         // --- TOAST FUNCTION ---
@@ -709,30 +565,51 @@
         async function loadBusStops() {
             try {
                 // Try live database first
-                const response = await fetch('/api/stops');
+                const response = await fetch(`${API_BASE_URL}/api/stops`);
                 if (!response.ok) throw new Error('API unavailable');
                 const data = await response.json();
-                busStops = data.sort((a, b) => a.name.localeCompare(b.name));
+                busStops = data.map(s => ({
+                    ...s,
+                    lat: parseFloat(s.lat),
+                    lon: parseFloat(s.lon),
+                    demand_multiplier: parseFloat(s.demand_multiplier || 1)
+                })).sort((a, b) => a.name.localeCompare(b.name));
                 console.log(`[INFO] Loaded ${busStops.length} stops from Database.`);
                 stopSearchInput.placeholder = "Search bus stop...";
                 stopSearchInput.disabled = false;
                 addStopBtn.disabled = false;
+                
+                // Initialize Autocomplete with data
+                setupAutocomplete();
+                setupMobileAutocomplete();
             } catch (error) {
                 console.warn('API error, falling back to JSON:', error);
                 
-                // Fallback to static JSON
+                // Fallback to static JSON (Local/Relative)
                 try {
-                    const response = await fetch(`/bus_stops.json?t=${Date.now()}`);
+                    // CRITICAL FIX: Use relative path so it works with http-server (8000) or file://
+                    // Do NOT force API_BASE_URL here, as the backend might be down.
+                    const response = await fetch(`bus_stops.json?t=${Date.now()}`);
+                    if (!response.ok) throw new Error('Local JSON unavailable');
                     const data = await response.json();
-                    busStops = data.sort((a, b) => a.name.localeCompare(b.name));
+                    busStops = data.map(s => ({
+                        ...s,
+                        lat: parseFloat(s.lat),
+                        lon: parseFloat(s.lon),
+                        demand_multiplier: parseFloat(s.demand_multiplier || 1)
+                    })).sort((a, b) => a.name.localeCompare(b.name));
                     console.log(`[INFO] Loaded ${busStops.length} stops from JSON fallback.`);
-                    showToast("Offline Mode: New stops may not appear.", 'error');
+                    showToast("Offline Mode: Using local data.", 'warning');
                     stopSearchInput.placeholder = "Search bus stop (Offline)...";
                     stopSearchInput.disabled = false;
                     addStopBtn.disabled = false;
+                    
+                    // Initialize Autocomplete with data
+                    setupAutocomplete();
+                    setupMobileAutocomplete();
                 } catch (jsonError) {
                     console.error('Critical: Failed to load stops entirely:', jsonError);
-                    showToast("Failed to load map data.", 'error');
+                    showToast("Failed to load map data. Check console.", 'error');
                 }
             }
         }
@@ -747,12 +624,21 @@
         }
 
         function setupAutocomplete() {
-            awesomplete = new Awesomplete(stopSearchInput, { 
-                list: busStops.map(s => s.name), minChars: 1, maxItems: 10
-            });
+            if (!stopSearchInput) return;
+            if (typeof Awesomplete === 'undefined') return;
+            
+            const list = busStops.map(s => s.name);
+            if (awesomplete) {
+                awesomplete.list = list;
+            } else {
+                awesomplete = new Awesomplete(stopSearchInput, { 
+                    list: list, minChars: 1, maxItems: 10
+                });
+            }
         }
 
         function setupDragAndDrop() {
+            if (typeof Sortable === 'undefined') return;
             new Sortable(routeListUl, {
                 animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost',
                 onEnd: function (evt) {
@@ -764,6 +650,9 @@
         }
 
         function toggleAllStops() {
+             const isMobile = window.innerWidth < 768;
+             const mobileBtn = document.getElementById('mobileToggleStopsBtn');
+
              if (!areAllStopsVisible) {
                 if (!allStopsLayer) { 
                     const allMarkers = busStops.map(stop => {
@@ -774,15 +663,44 @@
                     allStopsLayer = L.layerGroup(allMarkers);
                 }
                 map.addLayer(allStopsLayer);
+                
+                // Desktop Update
                 toggleStopsBtn.innerHTML = '<i class="ph ph-eye-slash"></i> Hide Network Map';
                 toggleStopsBtn.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
                 stopsPanel.classList.remove('translate-x-full');
+                
+                // Mobile Update
+                if (mobileBtn) {
+                    mobileBtn.innerHTML = '<i class="ph ph-eye-slash"></i> Hide';
+                    mobileBtn.classList.add('bg-blue-100', 'text-blue-700');
+                    mobileBtn.classList.remove('bg-gray-100', 'text-gray-700');
+                    
+                    // Close bottom sheet if open
+                    const sheet = document.getElementById('mobileBottomSheet');
+                    if(sheet) sheet.classList.remove('expanded');
+                    
+                    // Move toast to bottom
+                    document.getElementById('toastContainer').classList.add('toast-on-panel');
+                }
+                
                 renderStopsSidebarList(busStops); 
             } else {
                 if (allStopsLayer) map.removeLayer(allStopsLayer);
+                
+                // Desktop Update
                 toggleStopsBtn.innerHTML = '<i class="ph ph-map-pin"></i> Show All Stops';
                 toggleStopsBtn.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
                 stopsPanel.classList.add('translate-x-full');
+                
+                // Mobile Update
+                if (mobileBtn) {
+                    mobileBtn.innerHTML = '<i class="ph ph-map-pin"></i> Show Stops';
+                    mobileBtn.classList.remove('bg-blue-100', 'text-blue-700');
+                    mobileBtn.classList.add('bg-gray-100', 'text-gray-700');
+                    
+                    // Reset toast position
+                    document.getElementById('toastContainer').classList.remove('toast-on-panel');
+                }
             }
             areAllStopsVisible = !areAllStopsVisible;
         }
@@ -850,7 +768,7 @@
                     }
                     
                     div.innerHTML = `
-                        <div class="flex items-center gap-3 flex-1 cursor-pointer" onclick="map.flyTo([${stop.lat}, ${stop.lon}], 16, { animate: true, duration: 1.5 })">
+                        <div class="flex items-center gap-3 flex-1 cursor-pointer" onclick="locateStopFromSidebar(${stop.lat}, ${stop.lon})">
                             <div class="h-6 w-6 rounded-full ${iconBg} flex items-center justify-center text-xs">
                                 <i class="ph ${iconClass}"></i>
                             </div>
@@ -863,7 +781,7 @@
                             <button onclick="addStopToRouteFromSidebar(${stop.bus_stop_id})" class="h-7 w-7 rounded-md hover:bg-green-100 text-gray-400 hover:text-green-600 transition flex items-center justify-center" title="Add to Route">
                                 <i class="ph ph-plus-circle text-lg"></i>
                             </button>
-                            <button onclick="map.flyTo([${stop.lat}, ${stop.lon}], 16, { animate: true, duration: 1.5 })" class="h-7 w-7 rounded-md hover:bg-blue-100 text-gray-400 hover:text-blue-600 transition flex items-center justify-center" title="Locate">
+                            <button onclick="locateStopFromSidebar(${stop.lat}, ${stop.lon})" class="h-7 w-7 rounded-md hover:bg-blue-100 text-gray-400 hover:text-blue-600 transition flex items-center justify-center" title="Locate">
                                 <i class="ph ph-crosshair text-lg"></i>
                             </button>
                         </div>
@@ -884,6 +802,15 @@
         function addStopToRouteFromSidebar(stopId) {
             const stop = busStops.find(s => s.bus_stop_id === stopId);
             if (stop) addStopToRoute(stop);
+        }
+
+        function locateStopFromSidebar(lat, lon) {
+            map.flyTo([lat, lon], 16, { animate: true, duration: 1.5 });
+            
+            // On mobile, close the panel so user can see the map
+            if (window.innerWidth < 768) {
+                toggleAllStops(); // This toggles it off
+            }
         }
 
         function addStopToRoute(directStop = null) {
@@ -920,8 +847,13 @@
         }
 
         function renderRouteList() {
+            if (!routeListUl) return;
             routeListUl.innerHTML = '';
             stopCountBadge.textContent = `${currentRoute.length} Stops`;
+            
+            // Sync Mobile Lists
+            renderMobileRouteList();
+
             if (currentRoute.length === 0) {
                 addStopBtn.innerHTML = '<i class="ph ph-map-pin text-lg"></i> Set Departure Point';
                 addStopBtn.classList.replace('text-gray-700', 'text-blue-700');
@@ -955,32 +887,38 @@
         }
         
         // Global variables for route comparison
-        let originalRouteGeoJSON = null;
-        let optimizedRouteGeoJSON = null;
-        let originalRouteStats = null;
-        let optimizedRouteStats = null;
-        let originalPolyline = null;
-        let optimizedPolyline = null;
         let activeRouteType = 'original'; // 'original' or 'optimized'
 
         function handleGetRoute() {
-            // ... (Same initialization code)
             if (currentRoute.length < 2) { showToast("Please add at least 2 stops to calculate a route.", 'error'); return; } 
             
             if (areAllStopsVisible) toggleAllStops();
             
             getRouteBtn.disabled = true;
-            getRouteBtn.innerHTML = '<i class="ph ph-spinner animate-spin text-xl"></i> Optimizing...';
+            getRouteBtn.innerHTML = '<i class="ph ph-circle-notch text-xl" style="animation: spin 1s linear infinite; display: inline-block;"></i> Optimizing...';
             statusMsg.textContent = "Calculating best path...";
             
-            // 1. Get Original Route (OSRM)
-            const coords = currentRoute.map(stop => `${stop.lon.toFixed(5)},${stop.lat.toFixed(5)}`).join(';');
-            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson&overview=full`;
-
-            // Helper to fetch and process route
             (async () => {
                 try {
-                    const osrmResponse = await fetch(osrmUrl);
+                    // 1. Get Original Route (OSRM)
+                    // Validate coordinates first
+                    const validStops = currentRoute.filter(s => s.lat && s.lon);
+                    if (validStops.length !== currentRoute.length) {
+                        throw new Error("Some stops have invalid coordinates.");
+                    }
+
+                    const coords = currentRoute.map(stop => `${stop.lon.toFixed(5)},${stop.lat.toFixed(5)}`).join(';');
+                    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson&overview=full`;
+
+                    // Helper for timeout
+                    const fetchWithTimeout = (url, options = {}, timeout = 10000) => {
+                        return Promise.race([
+                            fetch(url, options),
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeout))
+                        ]);
+                    };
+
+                    const osrmResponse = await fetchWithTimeout(osrmUrl);
                     if (!osrmResponse.ok) throw new Error('OSRM Routing Failed');
                     const routeData = await osrmResponse.json();
                     if (!routeData.routes || routeData.routes.length === 0) throw new Error('No route found');
@@ -989,7 +927,7 @@
                     const distance = originalRouteGeoJSON.distance / 1000;
                     
                     // 2. Get AI Prediction & Optimization
-                    const predictionResponse = await fetch(`${API_BASE_URL}/predict`, {
+                    const predictionResponse = await fetchWithTimeout(`${API_BASE_URL}/predict`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
                             distance_km: distance, 
@@ -1016,14 +954,7 @@
                         const isDifferent = JSON.stringify(opt.stop_ids) !== JSON.stringify(currentRoute.map(s=>s.bus_stop_id));
                         
                         if (isDifferent) {
-                            // We calculate the potential savings, but strictly RESPECT USER'S ORDER (do not overwrite finalStats or finalRouteGeoJSON)
-                            // The user wants to see stats for THEIR route, not have it auto-reordered.
-                            
-                            // Just calculate the savings value for the card
                             finalStats.savings = opt.savings_inr || 0;
-                            
-                            // Optional: If we wanted to let them Apply it, we'd need a button. 
-                            // For now, we just show the savings potential without forcing the route change.
                         }
                     }
 
@@ -1031,26 +962,30 @@
                     updateMapSingle(finalRouteGeoJSON);
                     
                     // Update Main Metrics Card
-                    document.getElementById('valDuration').innerText = Math.round(finalStats.duration) + " min";
-                    document.getElementById('valDistance').innerText = finalStats.distance.toFixed(1) + " km";
-                    document.getElementById('valPassengers').innerText = finalStats.passengers;
-                    document.getElementById('valCost').innerText = "₹" + finalStats.cost;
-                    openMetrics(); // Ensure it opens
-
-                    // Update Savings Card (Bottom Left)
-                    // Savings Card Removed per user request
-                    /* 
-                    const savingsCard = document.getElementById('savingsCard');
-                    if (savingsCard) savingsCard.classList.add('hidden');
-                    */
+                    // Update Main Metrics Card
+                    const dDur = document.getElementById('valDuration'); if(dDur) dDur.innerText = Math.round(finalStats.duration) + " min";
+                    const dDist = document.getElementById('valDistance'); if(dDist) dDist.innerText = finalStats.distance.toFixed(1) + " km";
+                    const dPass = document.getElementById('valPassengers'); if(dPass) dPass.innerText = finalStats.passengers;
+                    const dCost = document.getElementById('valCost'); if(dCost) dCost.innerText = "₹" + finalStats.cost;
                     
+                    // Update Mobile Stats
+                    updateMobileStats(finalStats.duration, finalStats.distance, finalStats.passengers, finalStats.cost);
+                    
+                    openMetrics(); // Ensure it opens
+                    
+                    // Minimize mobile bottom sheet to show map (Default state)
+                    const sheet = document.getElementById('mobileBottomSheet');
+                    if(sheet) {
+                        sheet.classList.remove('expanded');
+                    }
+
                     statusMsg.textContent = "Route optimized successfully";
                     showToast("Route optimized!", 'success');
 
                 } catch (error) {
                     console.error(error);
                     statusMsg.textContent = "Error: " + error.message;
-                    showToast("Route calculation failed.", 'error');
+                    showToast("Route calculation failed: " + error.message, 'error');
                 } finally {
                     getRouteBtn.disabled = false;
                     getRouteBtn.innerHTML = '<i class="ph ph-lightning text-xl"></i> Optimize Route';
@@ -1061,6 +996,10 @@
         // Removed dual-route functions (updateMetricsDisplay, selectRoute, renderComparisonMap)
         
         function updateMapSingle(route) {
+            if (!route || !route.geometry || !route.geometry.coordinates) {
+                console.error("Invalid route data passed to updateMapSingle", route);
+                return;
+            }
             if (originalPolyline) map.removeLayer(originalPolyline);
             if (optimizedPolyline) map.removeLayer(optimizedPolyline);
             if (routeLayer) map.removeLayer(routeLayer);
@@ -1069,7 +1008,19 @@
             routeLayer = L.polyline(routeGeometry, { color: '#2563eb', weight: 6, opacity: 0.8, lineJoin: 'round' }).addTo(map);
             
             renderMarkers(currentRoute);
-            map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+            
+            // Adjust zoom based on device
+            const isMobile = window.innerWidth < 768;
+            if (isMobile) {
+                // Mobile: Account for Top Bar (~80px) and Bottom Sheet (~220px)
+                map.fitBounds(routeLayer.getBounds(), { 
+                    paddingTopLeft: [20, 100],
+                    paddingBottomRight: [20, 240]
+                });
+            } else {
+                // Desktop: Standard padding
+                map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
+            }
         }
 
         function renderMarkers(stops) {

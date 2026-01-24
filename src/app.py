@@ -112,6 +112,15 @@ def load_bus_stops():
 
 load_bus_stops()
 
+@app.route('/api/stops', methods=['GET'])
+def get_stops():
+    # Return list of stops
+    return jsonify(list(bus_stops_data.values()))
+
+@app.route('/bus_stops.json')
+def serve_stops_json():
+    return send_from_directory(PROJECT_ROOT, 'bus_stops.json')
+
 @app.route('/predict', methods=['POST'])
 def predict():
     if model is None:
@@ -631,4 +640,4 @@ def serve_static(path):
 
 if __name__ == '__main__':
     # For local development
-    app.run(port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
