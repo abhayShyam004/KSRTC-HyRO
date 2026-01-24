@@ -421,12 +421,17 @@
                 
                 return `
                 <li class="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100 slide-in-bottom" style="animation-delay: ${i * 50}ms">
-                    <div class="flex flex-col gap-1 overflow-hidden">
-                        <div class="flex items-center gap-1.5">
-                            <div class="w-2 h-2 rounded-full ${dotClass}"></div>
-                            <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">${labelText}</span>
+                    <div class="flex items-center gap-3 overflow-hidden flex-1">
+                        <div class="drag-handle text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing p-1">
+                            <i class="ph ph-dots-six-vertical text-lg"></i>
                         </div>
-                        <span class="text-sm font-medium text-gray-800 truncate pl-3.5">${stop.name}</span>
+                        <div class="flex flex-col gap-1 overflow-hidden">
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-2 h-2 rounded-full ${dotClass}"></div>
+                                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">${labelText}</span>
+                            </div>
+                            <span class="text-sm font-medium text-gray-800 truncate pl-3.5">${stop.name}</span>
+                        </div>
                     </div>
                     <button onclick="removeStopMobile(${i})" class="h-8 w-8 rounded-lg hover:bg-red-50 text-gray-400 hover:text-red-500 transition flex items-center justify-center flex-shrink-0">
                         <i class="ph ph-trash text-lg"></i>
@@ -639,6 +644,8 @@
 
         function setupDragAndDrop() {
             if (typeof Sortable === 'undefined') return;
+            
+            // Desktop
             new Sortable(routeListUl, {
                 animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost',
                 onEnd: function (evt) {
@@ -647,6 +654,18 @@
                     renderRouteList(); 
                 }
             });
+            
+            // Mobile
+            if (mobileRouteList) {
+                new Sortable(mobileRouteList, {
+                    animation: 150, handle: '.drag-handle', ghostClass: 'sortable-ghost',
+                    onEnd: function (evt) {
+                        const movedItem = currentRoute.splice(evt.oldIndex, 1)[0];
+                        currentRoute.splice(evt.newIndex, 0, movedItem);
+                        renderRouteList(); 
+                    }
+                });
+            }
         }
 
         function toggleAllStops() {
