@@ -12,6 +12,9 @@
     <script src="https://cdn.jsdelivr.net/npm/awesomplete@1.1.5/awesomplete.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
         #map { height: 100%; width: 100%; z-index: 0; }
@@ -151,6 +154,12 @@
         .animate-spin {
             animation: spin 1s linear infinite;
         }
+        .district-accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+        .district-accordion-content.expanded { max-height: none; }
+        .district-header { cursor: pointer; user-select: none; }
+        .district-header:hover { background-color: #f1f5f9; }
+        .district-header .toggle-icon { transition: transform 0.2s; }
+        .district-header.expanded .toggle-icon { transform: rotate(180deg); }
     </style>
 </head>
 <body class="h-screen flex overflow-hidden text-gray-800 relative">
@@ -356,7 +365,7 @@
         let markers = [];
         let busStops = [];
         let areAllStopsVisible = false;
-        let allStopsLayer = null;
+        let markerClusterGroup = null;
         let originalPolyline = null;
         let optimizedPolyline = null;
         let originalRouteGeoJSON = null;
@@ -365,6 +374,9 @@
         let optimizedRouteStats = null;
         let awesomplete;
         let intermediateStopsLayer = null;
+
+        // --- SEARCH OPTIMIZATION ---
+        let searchTimeout = null;
         
         // --- DESKTOP ELEMENTS ---
         const stopSearchInput = document.getElementById('stopSearch');
@@ -589,6 +601,9 @@
                 stopSearchInput.disabled = false;
                 addStopBtn.disabled = false;
                 
+                // Initialize sidebar data
+                stopsListAll = busStops;
+                
                 // Initialize Autocomplete with data
                 setupAutocomplete();
                 setupMobileAutocomplete();
@@ -614,6 +629,9 @@
                     stopSearchInput.disabled = false;
                     addStopBtn.disabled = false;
                     
+                    // Initialize sidebar data
+                    stopsListAll = busStops;
+                    
                     // Initialize Autocomplete with data
                     setupAutocomplete();
                     setupMobileAutocomplete();
@@ -626,11 +644,26 @@
 
         function initializeMap() {
             if (map) map.remove();
-            map = L.map('map', { zoomControl: false }).setView([9.9816, 76.2999], 12);
+            
+            // Prefer Canvas for high-performance rendering of polyline/markers
+            map = L.map('map', { 
+                zoomControl: false,
+                preferCanvas: true 
+            }).setView([10.5, 76.5], 7);
+
             L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
                 attribution: 'OSM | CARTO', subdomains: 'abcd', maxZoom: 20
             }).addTo(map);
             L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+            // Initialize the cluster group once
+            markerClusterGroup = L.markerClusterGroup({
+                chunkedLoading: true,
+                maxClusterRadius: 50,
+                disableClusteringAtZoom: 16,
+                spiderfyOnMaxZoom: true,
+                showCoverageOnHover: false
+            });
         }
 
         function setupAutocomplete() {
@@ -678,15 +711,15 @@
              const mobileBtn = document.getElementById('mobileToggleStopsBtn');
 
              if (!areAllStopsVisible) {
-                if (!allStopsLayer) { 
+                if (markerClusterGroup.getLayers().length === 0) { 
                     const allMarkers = busStops.map(stop => {
                         return L.circleMarker([stop.lat, stop.lon], {
                             radius: 6, color: '#475569', weight: 2, fillColor: '#94a3b8', fillOpacity: 0.9
                         }).bindTooltip(stop.name, { direction: 'top', offset: [0, -5] });
                     });
-                    allStopsLayer = L.layerGroup(allMarkers);
+                    markerClusterGroup.addLayers(allMarkers);
                 }
-                map.addLayer(allStopsLayer);
+                map.addLayer(markerClusterGroup);
                 
                 // Desktop Update
                 toggleStopsBtn.innerHTML = '<i class="ph ph-eye-slash"></i> Hide Network Map';
@@ -709,7 +742,7 @@
                 
                 renderStopsSidebarList(busStops); 
             } else {
-                if (allStopsLayer) map.removeLayer(allStopsLayer);
+                if (markerClusterGroup) map.removeLayer(markerClusterGroup);
                 
                 // Desktop Update
                 toggleStopsBtn.innerHTML = '<i class="ph ph-map-pin"></i> Show All Stops';
@@ -729,10 +762,15 @@
             areAllStopsVisible = !areAllStopsVisible;
         }
 
-        function renderStopsSidebarList(stopsToRender) {
-            stopsList.innerHTML = ''; 
+        function renderStopsSidebarList(stopsToRender, isSearch = false) {
+            stopsList.innerHTML = '';
             totalStopsCount.innerText = `${stopsToRender.length} locations`;
             
+            if (stopsToRender.length === 0) {
+                stopsList.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm">No stops found</div>';
+                return;
+            }
+
             // Group by District
             const grouped = stopsToRender.reduce((acc, stop) => {
                 const district = stop.district || 'Other';
@@ -741,9 +779,6 @@
                 return acc;
             }, {});
 
-            const fragment = document.createDocumentFragment();
-
-            // Geographic Order (North -> South)
             const districtOrder = [
                 "Kasaragod", "Kasargod", "Kannur", "Wayanad", "Kozhikode", "Malappuram", "Palakkad", 
                 "Thrissur", "Ernakulam", "Idukki", "Kottayam", "Alappuzha", 
@@ -753,74 +788,95 @@
             const sortedDistricts = Object.keys(grouped).sort((a, b) => {
                 let indexA = districtOrder.indexOf(a);
                 let indexB = districtOrder.indexOf(b);
-                // Put unknown districts at the end
                 if (indexA === -1) indexA = 999;
                 if (indexB === -1) indexB = 999;
                 return indexA - indexB;
             });
 
-            sortedDistricts.forEach(district => {
-                // District Header
-                const header = document.createElement('div');
-                header.className = "px-2 py-1.5 mt-2 mb-1 text-xs font-bold text-gray-400 uppercase tracking-wider bg-gray-50/50";
-                header.innerText = district;
-                fragment.appendChild(header);
+            const fragment = document.createDocumentFragment();
 
-                // Stops
-                grouped[district].forEach(stop => {
+            sortedDistricts.forEach(district => {
+                const distStops = grouped[district];
+                
+                // Accordion Wrapper
+                const wrapper = document.createElement('div');
+                wrapper.className = "mb-2 border border-gray-100 rounded-xl overflow-hidden bg-white shadow-sm";
+                
+                // Header
+                const header = document.createElement('div');
+                header.className = `district-header flex items-center justify-between p-3.5 bg-gray-50/50 transition-colors ${isSearch ? 'expanded' : ''}`;
+                header.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-gray-500 shadow-sm">
+                            <i class="ph ph-map-trifold text-lg"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-[13px] font-bold text-gray-800">${district}</h4>
+                            <p class="text-[10px] text-gray-400 font-medium uppercase tracking-wider">${distStops.length} locations</p>
+                        </div>
+                    </div>
+                    <i class="ph ph-caret-down toggle-icon text-gray-400"></i>
+                `;
+                
+                // Content
+                const content = document.createElement('div');
+                content.className = `district-accordion-content ${isSearch ? 'expanded' : ''}`;
+                
+                const listContainer = document.createElement('div');
+                listContainer.className = "p-2 space-y-1 bg-white";
+                
+                distStops.forEach(stop => {
                     const div = document.createElement('div');
-                    div.className = "p-3 mb-1 bg-white hover:bg-blue-50/30 rounded-lg border border-gray-100 hover:border-blue-200 transition group flex items-center justify-between";
-                    // Determine icon and badge based on category
-                    const isAirport = stop.category === 'airport' || stop.name.toLowerCase().includes('airport');
-                    const isHighDemand = (stop.demand_multiplier || 1) >= 1.7;
-                    const isCommercial = stop.category === 'commercial';
+                    div.className = "p-3 bg-gray-50/30 hover:bg-blue-50/50 rounded-lg border border-transparent hover:border-blue-100 transition group flex items-center justify-between cursor-pointer";
                     
-                    // Icon styling
-                    let iconClass = 'ph-bus';
+                    const isAirport = stop.category === 'airport' || (stop.name && stop.name.toLowerCase().includes('airport'));
+                    const isHighDemand = (stop.demand_multiplier || 1) >= 1.7;
+                    
                     let iconBg = 'bg-blue-100 text-blue-600';
-                    if (isAirport) { iconClass = 'ph-airplane-tilt'; iconBg = 'bg-purple-100 text-purple-600'; }
+                    let iconClass = 'ph-bus';
+                    if (isAirport) { iconBg = 'bg-purple-100 text-purple-600'; iconClass = 'ph-airplane-tilt'; }
                     else if (isHighDemand) { iconBg = 'bg-orange-100 text-orange-600'; }
                     
-                    // Badge
-                    let badge = '';
-                    if (isAirport) {
-                        badge = '<span class="text-[10px] text-purple-500 font-medium tracking-wide flex items-center gap-1"><i class="ph ph-airplane text-[8px]"></i> Airport</span>';
-                    } else if (isHighDemand) {
-                        badge = '<span class="text-[10px] text-orange-500 font-medium tracking-wide flex items-center gap-1"><i class="ph ph-fire text-[8px]"></i> High Demand</span>';
-                    } else if (isCommercial) {
-                        badge = '<span class="text-[10px] text-blue-400 font-medium tracking-wide flex items-center gap-1"><i class="ph ph-storefront text-[8px]"></i> Commercial</span>';
-                    }
-                    
                     div.innerHTML = `
-                        <div class="flex items-center gap-3 flex-1 cursor-pointer" onclick="locateStopFromSidebar(${stop.lat}, ${stop.lon})">
-                            <div class="h-6 w-6 rounded-full ${iconBg} flex items-center justify-center text-xs">
+                        <div class="flex items-center gap-3 flex-1" onclick="locateStopFromSidebar(${stop.lat}, ${stop.lon})">
+                            <div class="h-6 w-6 rounded-full ${iconBg} flex items-center justify-center text-[10px]">
                                 <i class="ph ${iconClass}"></i>
                             </div>
-                            <div class="flex flex-col">
-                                <span class="text-sm font-medium text-gray-700 group-hover:text-blue-700 truncate max-w-[140px]">${stop.name}</span>
-                                ${badge}
-                            </div>
+                            <span class="text-xs font-semibold text-gray-700 truncate max-w-[150px]">${stop.name}</span>
                         </div>
-                        <div class="flex items-center gap-1">
-                            <button onclick="addStopToRouteFromSidebar(${stop.bus_stop_id})" class="h-7 w-7 rounded-md hover:bg-green-100 text-gray-400 hover:text-green-600 transition flex items-center justify-center" title="Add to Route">
-                                <i class="ph ph-plus-circle text-lg"></i>
-                            </button>
-                            <button onclick="locateStopFromSidebar(${stop.lat}, ${stop.lon})" class="h-7 w-7 rounded-md hover:bg-blue-100 text-gray-400 hover:text-blue-600 transition flex items-center justify-center" title="Locate">
-                                <i class="ph ph-crosshair text-lg"></i>
-                            </button>
-                        </div>
+                        <button onclick="addStopToRouteFromSidebar(${stop.bus_stop_id}); event.stopPropagation();" class="h-8 w-8 rounded-lg hover:bg-green-100 text-gray-400 hover:text-green-600 transition flex items-center justify-center">
+                            <i class="ph ph-plus-circle text-lg"></i>
+                        </button>
                     `;
-                    fragment.appendChild(div);
+                    listContainer.appendChild(div);
                 });
+                
+                content.appendChild(listContainer);
+                
+                // Toggle Logic
+                header.onclick = () => {
+                    const isExpanded = content.classList.toggle('expanded');
+                    header.classList.toggle('expanded', isExpanded);
+                };
+                
+                wrapper.appendChild(header);
+                wrapper.appendChild(content);
+                fragment.appendChild(wrapper);
             });
-            
+
             stopsList.appendChild(fragment);
         }
 
+
+
         function filterSidebarStops(e) {
+            clearTimeout(searchTimeout);
             const query = e.target.value.toLowerCase();
-            const filtered = busStops.filter(s => s.name.toLowerCase().includes(query));
-            renderStopsSidebarList(filtered);
+            
+            searchTimeout = setTimeout(() => {
+                const filtered = busStops.filter(s => s.name.toLowerCase().includes(query));
+                renderStopsSidebarList(filtered, query.length > 0);
+            }, 300);
         }
 
         function addStopToRouteFromSidebar(stopId) {
@@ -1118,8 +1174,33 @@
             // Close popup
             map.closePopup();
             
-            // Add to route
-            addStopToRoute(stop);
+            if (currentRoute.length < 2) {
+                currentRoute.push(stop);
+            } else {
+                // Find best insertion index to minimize detour
+                let bestIndex = currentRoute.length;
+                let minIncrease = Infinity;
+
+                for (let i = 0; i < currentRoute.length - 1; i++) {
+                    const s1 = currentRoute[i];
+                    const s2 = currentRoute[i+1];
+                    
+                    // Use Euclidean distance for quick detour estimation
+                    const d1 = Math.sqrt((stop.lat - s1.lat)**2 + (stop.lon - s1.lon)**2);
+                    const d2 = Math.sqrt((stop.lat - s2.lat)**2 + (stop.lon - s2.lon)**2);
+                    const dDirect = Math.sqrt((s1.lat - s2.lat)**2 + (s1.lon - s2.lon)**2);
+                    
+                    const increase = (d1 + d2) - dDirect;
+                    if (increase < minIncrease) {
+                        minIncrease = increase;
+                        bestIndex = i + 1;
+                    }
+                }
+                currentRoute.splice(bestIndex, 0, stop);
+            }
+            
+            renderRouteList();
+            showToast(`${stop.name} added to path`, 'success');
             
             // Recalculate route automatically
             handleGetRoute();
