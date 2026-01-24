@@ -396,18 +396,21 @@
                 <div>
                     <label class="block text-sm text-gray-600 font-medium mb-2">District</label>
                     <select id="newStopDistrict" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option>Thiruvananthapuram</option>
-                        <option>Kollam</option>
-                        <option>Alappuzha</option>
-                        <option selected>Ernakulam</option>
-                        <option>Kottayam</option>
-                        <option>Thrissur</option>
-                        <option>Palakkad</option>
-                        <option>Malappuram</option>
-                        <option>Kozhikode</option>
-                        <option>Wayanad</option>
-                        <option>Kannur</option>
+                        <option>Kasaragod</option>
                         <option>Kasargod</option>
+                        <option>Kannur</option>
+                        <option>Wayanad</option>
+                        <option>Kozhikode</option>
+                        <option>Malappuram</option>
+                        <option>Palakkad</option>
+                        <option>Thrissur</option>
+                        <option selected>Ernakulam</option>
+                        <option>Idukki</option>
+                        <option>Kottayam</option>
+                        <option>Alappuzha</option>
+                        <option>Pathanamthitta</option>
+                        <option>Kollam</option>
+                        <option>Thiruvananthapuram</option>
                     </select>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
@@ -517,12 +520,25 @@
                 return;
             }
             
-            // 1. Sort by District then Name
+            // 1. Sort by District (Geographic North->South) then Name
+            const districtOrder = [
+                "Kasaragod", "Kasargod", "Kannur", "Wayanad", "Kozhikode", "Malappuram", "Palakkad", 
+                "Thrissur", "Ernakulam", "Idukki", "Kottayam", "Alappuzha", 
+                "Pathanamthitta", "Kollam", "Thiruvananthapuram"
+            ];
+
             const sortedStops = [...busStops].sort((a, b) => {
                 const distA = a.district || "";
                 const distB = b.district || "";
-                if (distA === distB) return a.name.localeCompare(b.name);
-                return distA.localeCompare(distB);
+                
+                let indexA = districtOrder.indexOf(distA);
+                let indexB = districtOrder.indexOf(distB);
+                
+                if (indexA === -1) indexA = 999;
+                if (indexB === -1) indexB = 999;
+
+                if (indexA !== indexB) return indexA - indexB;
+                return a.name.localeCompare(b.name);
             });
 
             let currentDistrict = '';

@@ -314,6 +314,10 @@
                         <div class="h-10 w-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center mr-4 shadow-sm"><i class="ph ph-gas-pump text-xl"></i></div>
                         <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Fuel Cost</p><p id="valCost" class="text-lg font-bold text-gray-800 leading-none mt-0.5">₹0</p></div>
                     </div>
+                    <div id="intermediateCountContainer" class="hidden flex items-center p-3 hover:bg-gray-50 rounded-lg transition border-t border-gray-50">
+                        <div class="h-10 w-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center mr-4 shadow-sm"><i class="ph ph-dots-three-circle text-xl"></i></div>
+                        <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Path Stops</p><p id="valIntermediate" class="text-lg font-bold text-gray-800 leading-none mt-0.5">0 found</p></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -360,6 +364,7 @@
         let originalRouteStats = null;
         let optimizedRouteStats = null;
         let awesomplete;
+        let intermediateStopsLayer = null;
         
         // --- DESKTOP ELEMENTS ---
         const stopSearchInput = document.getElementById('stopSearch');
@@ -740,7 +745,7 @@
 
             // Geographic Order (North -> South)
             const districtOrder = [
-                "Kasargod", "Kannur", "Wayanad", "Kozhikode", "Malappuram", "Palakkad", 
+                "Kasaragod", "Kasargod", "Kannur", "Wayanad", "Kozhikode", "Malappuram", "Palakkad", 
                 "Thrissur", "Ernakulam", "Idukki", "Kottayam", "Alappuzha", 
                 "Pathanamthitta", "Kollam", "Thiruvananthapuram"
             ];
@@ -881,6 +886,7 @@
                 statusMsg.textContent = "Ready to build route";
                 closeMetrics();
                 if(routeLayer) map.removeLayer(routeLayer);
+                if(intermediateStopsLayer) map.removeLayer(intermediateStopsLayer);
                 markers.forEach(m => map.removeLayer(m));
                 markers = [];
                 return;
@@ -1022,9 +1028,13 @@
             if (originalPolyline) map.removeLayer(originalPolyline);
             if (optimizedPolyline) map.removeLayer(optimizedPolyline);
             if (routeLayer) map.removeLayer(routeLayer);
+            if (intermediateStopsLayer) map.removeLayer(intermediateStopsLayer);
             
             const routeGeometry = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
             routeLayer = L.polyline(routeGeometry, { color: '#2563eb', weight: 6, opacity: 0.8, lineJoin: 'round' }).addTo(map);
+            
+            // SHOW INTERMEDIATE STOPS
+            renderIntermediateStops(routeGeometry);
             
             renderMarkers(currentRoute);
             
@@ -1040,6 +1050,96 @@
                 // Desktop: Standard padding
                 map.fitBounds(routeLayer.getBounds(), { padding: [50, 50] });
             }
+        }
+
+        // --- GEOMETRY UTILS FOR INTERMEDIATE STOPS ---
+        function renderIntermediateStops(polylineSegments) {
+            if (intermediateStopsLayer) map.removeLayer(intermediateStopsLayer);
+            
+            const waypointIds = new Set(currentRoute.map(s => s.bus_stop_id));
+            const intermediateMarkers = [];
+            
+            // Threshold for proximity in degrees (approx 60 meters)
+            const THRESHOLD = 0.0006; 
+            
+            busStops.forEach(stop => {
+                if (waypointIds.has(stop.bus_stop_id)) return;
+                
+                const dist = getMinDistToPolyline(stop.lat, stop.lon, polylineSegments);
+                if (dist < THRESHOLD) {
+                    const circle = L.circleMarker([stop.lat, stop.lon], {
+                        radius: 5,
+                        color: '#64748b', // darker slate for border
+                        weight: 2,
+                        fillColor: '#ffffff', // white center (metro style)
+                        fillOpacity: 1
+                    });
+                    
+                    // Enhanced Popup with Add Button
+                    const popupContent = `
+                        <div class="font-sans p-1">
+                            <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Intermediate Stop</div>
+                            <div class="text-sm font-bold text-slate-800 mb-2">${stop.name}</div>
+                            <button onclick="addIntermediateStopToRoute(${stop.bus_stop_id})" 
+                                    class="w-full py-1.5 px-3 bg-blue-600 text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 transition">
+                                <i class="ph ph-plus-circle"></i> ADD TO TRIP
+                            </button>
+                        </div>
+                    `;
+                    
+                    circle.bindPopup(popupContent, { closeButton: false, offset: [0, -5] });
+                    circle.bindTooltip(stop.name, { direction: 'top', offset: [0, -2], opacity: 0.8 });
+                    
+                    intermediateMarkers.push(circle);
+                }
+            });
+            
+            intermediateStopsLayer = L.layerGroup(intermediateMarkers).addTo(map);
+            
+            // Update Metrics
+            const countContainer = document.getElementById('intermediateCountContainer');
+            const countVal = document.getElementById('valIntermediate');
+            if (countContainer && countVal) {
+                if (intermediateMarkers.length > 0) {
+                    countContainer.classList.remove('hidden');
+                    countVal.innerText = `${intermediateMarkers.length} on path`;
+                } else {
+                    countContainer.classList.add('hidden');
+                }
+            }
+            
+            console.log(`[UI] Rendered ${intermediateMarkers.length} intermediate stops.`);
+        }
+
+        function addIntermediateStopToRoute(stopId) {
+            const stop = busStops.find(s => s.bus_stop_id === stopId);
+            if (!stop) return;
+            
+            // Close popup
+            map.closePopup();
+            
+            // Add to route
+            addStopToRoute(stop);
+            
+            // Recalculate route automatically
+            handleGetRoute();
+        }
+
+        function getMinDistToPolyline(lat, lon, polyline) {
+            let minD = Infinity;
+            for (let i = 0; i < polyline.length - 1; i++) {
+                const d = distToSegment([lat, lon], polyline[i], polyline[i+1]);
+                if (d < minD) minD = d;
+            }
+            return minD;
+        }
+
+        function distToSegment(p, v, w) {
+            const l2 = (v[0] - w[0])**2 + (v[1] - w[1])**2;
+            if (l2 === 0) return Math.sqrt((p[0] - v[0])**2 + (p[1] - v[1])**2);
+            let t = ((p[0] - v[0]) * (w[0] - v[0]) + (p[1] - v[1]) * (w[1] - v[1])) / l2;
+            t = Math.max(0, Math.min(1, t));
+            return Math.sqrt((p[0] - (v[0] + t * (w[0] - v[0])))**2 + (p[1] - (v[1] + t * (w[1] - v[1])))**2);
         }
 
         function renderMarkers(stops) {
