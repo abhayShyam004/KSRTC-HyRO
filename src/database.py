@@ -38,7 +38,7 @@ def init_database():
             # Bus Stops table
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS bus_stops (
-                    bus_stop_id SERIAL PRIMARY KEY,
+                    bus_stop_id BIGSERIAL PRIMARY KEY,
                     name VARCHAR(255) NOT NULL,
                     lat DECIMAL(10, 6) NOT NULL,
                     lon DECIMAL(10, 6) NOT NULL,
@@ -77,7 +77,7 @@ def init_database():
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS route_history (
                     route_id SERIAL PRIMARY KEY,
-                    stop_ids INTEGER[],
+                    stop_ids BIGINT[],
                     distance_km DECIMAL(10, 2),
                     duration_min INTEGER,
                     passengers INTEGER,
@@ -101,7 +101,7 @@ def init_database():
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS demand_history (
                     id SERIAL PRIMARY KEY,
-                    stop_id INTEGER,
+                    stop_id BIGINT,
                     timestamp TIMESTAMP,
                     day_of_week INTEGER, -- 0-6 (Mon-Sun)
                     hour_of_day INTEGER, -- 0-23
