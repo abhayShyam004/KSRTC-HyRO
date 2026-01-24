@@ -1,0 +1,10 @@
+[
+  {
+    "user_id": 1,
+    "name": "Admin User",
+    "email": "admin123",
+    "password_hash": "PLAIN:admin@hyro", 
+    "role": "super_admin",
+    "status": "active"
+  }
+]

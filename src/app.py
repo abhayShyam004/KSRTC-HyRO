@@ -505,7 +505,15 @@ def api_status():
 def api_get_users():
     """Get all users"""
     if not DB_AVAILABLE:
-        return jsonify([])
+        try:
+            users_path = os.path.join(PROJECT_ROOT, 'users.json')
+            if os.path.exists(users_path):
+                with open(users_path, 'r') as f:
+                    users = json.load(f)
+                    return jsonify(users)
+            return jsonify([])
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
     
     try:
         users = get_all_users()

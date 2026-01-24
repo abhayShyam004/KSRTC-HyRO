@@ -33,12 +33,25 @@
         .leaflet-container { font-family: 'Inter', sans-serif !important; }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 min-h-screen flex">
+<body class="bg-gray-50 text-gray-800 min-h-screen flex flex-col">
+
+    <!-- ========== MOBILE HEADER ========== -->
+    <div class="md:hidden bg-white border-b border-gray-200 p-4 flex items-center justify-between sticky top-0 z-40">
+        <div class="flex items-center gap-3">
+            <div class="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200">
+                <i class="ph ph-bus text-white text-lg"></i>
+            </div>
+            <h1 class="font-bold text-gray-900">KSRTC-HyRO</h1>
+        </div>
+        <button onclick="toggleSidebar()" class="p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition">
+            <i class="ph ph-list text-2xl"></i>
+        </button>
+    </div>
 
     <!-- ========== SIDEBAR ========== -->
-    <aside class="w-64 bg-white border-r border-gray-200 flex flex-col fixed h-full z-50 shadow-sm">
-        <!-- Logo -->
-        <div class="p-6 border-b border-gray-100">
+    <aside id="sidebar" class="fixed inset-y-0 left-0 w-64 bg-white border-r border-gray-200 flex flex-col z-50 shadow-xl transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out">
+        <!-- Logo (Desktop) -->
+        <div class="p-6 border-b border-gray-100 hidden md:block">
             <div class="flex items-center gap-3">
                 <div class="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200">
                     <i class="ph ph-bus text-white text-xl"></i>
@@ -50,18 +63,26 @@
             </div>
         </div>
 
+        <!-- Mobile Close Button -->
+        <div class="p-4 border-b border-gray-100 md:hidden flex justify-between items-center">
+            <span class="font-bold text-gray-500 uppercase text-xs tracking-wider">Menu</span>
+            <button onclick="toggleSidebar()" class="p-2 text-gray-500 hover:text-red-500 hover:bg-red-50 rounded-lg transition">
+                <i class="ph ph-x text-xl"></i>
+            </button>
+        </div>
+
         <!-- Navigation -->
-        <nav class="flex-1 p-4 space-y-1">
-            <a href="#" onclick="showSection('dashboard')" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-600" id="nav-dashboard">
+        <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
+            <a href="#" onclick="showSection('dashboard'); closeSidebarMobile()" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-600" id="nav-dashboard">
                 <i class="ph ph-chart-pie-slice text-xl text-blue-500"></i> Dashboard
             </a>
-            <a href="#" onclick="showSection('stops')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-600" id="nav-stops">
+            <a href="#" onclick="showSection('stops'); closeSidebarMobile()" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-600" id="nav-stops">
                 <i class="ph ph-map-pin text-xl text-gray-400"></i> Manage Stops
             </a>
-            <a href="#" onclick="showSection('settings')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-600" id="nav-settings">
+            <a href="#" onclick="showSection('settings'); closeSidebarMobile()" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-600" id="nav-settings">
                 <i class="ph ph-gear-six text-xl text-gray-400"></i> Configuration
             </a>
-            <a href="#" onclick="showSection('users')" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-600" id="nav-users">
+            <a href="#" onclick="showSection('users'); closeSidebarMobile()" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-sm text-gray-600" id="nav-users">
                 <i class="ph ph-users-three text-xl text-gray-400"></i> User Management
             </a>
         </nav>
@@ -77,13 +98,16 @@
         </div>
     </aside>
 
+    <!-- Overlay for mobile sidebar -->
+    <div id="sidebarOverlay" onclick="toggleSidebar()" class="fixed inset-0 bg-black/50 z-40 hidden md:hidden glass"></div>
+
     <!-- ========== MAIN CONTENT ========== -->
-    <main class="flex-1 ml-64 p-8">
+    <main class="flex-1 md:ml-64 p-4 md:p-8 transition-all duration-300">
         
         <!-- HEADER -->
-        <header class="flex items-center justify-between mb-8">
+        <header class="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
             <div>
-                <h2 class="text-2xl font-bold text-gray-900" id="sectionTitle">Analytics Dashboard</h2>
+                <h2 class="text-xl md:text-2xl font-bold text-gray-900" id="sectionTitle">Analytics Dashboard</h2>
                 <p class="text-gray-500 text-sm mt-1">Real-time insights into your fleet operations</p>
             </div>
             <div class="flex items-center gap-4">
@@ -92,15 +116,13 @@
                     <span class="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></span>
                     <span id="dbStatusText">Checking...</span>
                 </div>
-                
-
             </div>
         </header>
 
         <!-- ========== DASHBOARD SECTION ========== -->
         <section id="section-dashboard" class="fade-in">
             <!-- Stats Grid -->
-            <div class="grid grid-cols-4 gap-6 mb-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
                 <div class="stat-card bg-slate-50 rounded-2xl p-6 border border-gray-200 shadow-sm">
                     <div class="flex items-center justify-between mb-4">
                         <div class="h-12 w-12 bg-blue-100 rounded-xl flex items-center justify-center">
@@ -142,52 +164,56 @@
             <!-- Charts Row -->
             <div class="grid grid-cols-1 gap-6 mb-8">
                 <!-- Passenger Trends Chart -->
-                <div class="bg-slate-50 rounded-2xl p-6 border border-gray-200 shadow-sm">
+                <div class="bg-slate-50 rounded-2xl p-4 md:p-6 border border-gray-200 shadow-sm">
                     <div class="flex items-center justify-between mb-6">
                         <div>
                             <h3 class="font-bold text-lg text-gray-900">Route Optimization Activity</h3>
                             <p class="text-gray-500 text-sm">Routes optimized over the last 7 days</p>
                         </div>
                     </div>
-                    <canvas id="passengerChart" height="80"></canvas>
+                    <div class="relative h-64 w-full">
+                        <canvas id="passengerChart"></canvas>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- ========== MANAGE STOPS SECTION ========== -->
         <section id="section-stops" class="hidden fade-in">
-            <div class="flex items-center justify-between mb-6">
+            <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
                 <div>
                     <p class="text-gray-500 text-sm">Add, edit, or remove bus stops from the network</p>
                 </div>
-                <div class="flex items-center gap-3">
-                    <div class="relative">
-                        <input type="text" id="stopsSearchInput" onkeyup="filterStopsTable()" placeholder="Search stops..." class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 shadow-sm">
+                <div class="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                    <div class="relative w-full sm:w-auto">
+                        <input type="text" id="stopsSearchInput" onkeyup="filterStopsTable()" placeholder="Search stops..." class="bg-white border border-gray-200 rounded-xl px-4 py-2.5 pl-10 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full sm:w-64 shadow-sm">
                         <i class="ph ph-magnifying-glass absolute left-3.5 top-3 text-gray-400"></i>
                     </div>
-                    <button onclick="openAddStopModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2 shadow-lg shadow-blue-200">
-                        <i class="ph ph-plus-circle text-lg"></i> Add New Stop
+                    <button onclick="openAddStopModal()" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition flex items-center justify-center gap-2 shadow-lg shadow-blue-200">
+                        <i class="ph ph-plus-circle text-lg"></i> <span class="hidden sm:inline">Add New Stop</span><span class="sm:hidden">Add Stop</span>
                     </button>
                 </div>
             </div>
 
             <div class="bg-slate-50 rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                <table class="w-full">
-                    <thead>
-                        <tr class="text-left text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100 bg-gray-50">
-                            <th class="px-6 py-4">ID</th>
-                            <th class="px-6 py-4">Stop Name</th>
-                            <th class="px-6 py-4">District</th>
-                            <th class="px-6 py-4">Category</th>
-                            <th class="px-6 py-4">Demand Multiplier</th>
-                            <th class="px-6 py-4">Coordinates</th>
-                            <th class="px-6 py-4">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="stopsTableBody">
-                        <!-- Populated by JS -->
-                    </tbody>
-                </table>
+                <div class="overflow-x-auto">
+                    <table class="w-full min-w-[800px]">
+                        <thead>
+                            <tr class="text-left text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100 bg-gray-50">
+                                <th class="px-6 py-4">ID</th>
+                                <th class="px-6 py-4">Stop Name</th>
+                                <th class="px-6 py-4">District</th>
+                                <th class="px-6 py-4">Category</th>
+                                <th class="px-6 py-4">Demand Multiplier</th>
+                                <th class="px-6 py-4">Coordinates</th>
+                                <th class="px-6 py-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="stopsTableBody">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
 
@@ -289,21 +315,23 @@
                 </div>
     
                 <div class="bg-slate-50 rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
-                    <table class="w-full">
-                        <thead>
-                            <tr class="text-left text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100 bg-gray-50">
-                                <th class="px-6 py-4">User</th>
-                                <th class="px-6 py-4">Email</th>
-                                <th class="px-6 py-4">Role</th>
-                                <th class="px-6 py-4">Status</th>
-                                <th class="px-6 py-4">Joined</th>
-                                <th class="px-6 py-4">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="adminsTableBody">
-                            <!-- Populated by JS -->
-                        </tbody>
-                    </table>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[800px]">
+                            <thead>
+                                <tr class="text-left text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100 bg-gray-50">
+                                    <th class="px-6 py-4">User</th>
+                                    <th class="px-6 py-4">Email</th>
+                                    <th class="px-6 py-4">Role</th>
+                                    <th class="px-6 py-4">Status</th>
+                                    <th class="px-6 py-4">Joined</th>
+                                    <th class="px-6 py-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminsTableBody">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -785,6 +813,32 @@
         // Global Chart Instance
         let chartInstance = null;
 
+        // Sidebar Toggle Functions
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            if (sidebar.classList.contains('-translate-x-full')) {
+                // Open
+                sidebar.classList.remove('-translate-x-full');
+                overlay.classList.remove('hidden');
+            } else {
+                // Close
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
+        function closeSidebarMobile() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            // Only close if we are on mobile (check if sidebar is normally hidden/translated)
+            if (window.innerWidth < 768) {
+                sidebar.classList.add('-translate-x-full');
+                overlay.classList.add('hidden');
+            }
+        }
+
         // Load analytics from API
         async function loadAnalytics() {
             try {
@@ -798,198 +852,70 @@
                 document.getElementById('activeStops').textContent = data.active_stops;
 
                 // Update Chart
-                if (chartInstance && data.trends) {
-                    processChartData(data.trends);
-                }
+                const ctx = document.getElementById('passengerChart').getContext('2d');
+                if (chartInstance) chartInstance.destroy();
                 
-            } catch (e) {
-                console.log('Analytics not available:', e);
-                // Set to zeros if API fails
-                document.getElementById('totalPassengers').textContent = '0';
-                document.getElementById('totalRoutes').textContent = '0';
-                document.getElementById('fuelSaved').textContent = '₹0';
-            }
-        }
-
-        async function retrainModel() {
-            const btn = document.getElementById('retrainBtn');
-            const icon = btn.querySelector('i');
-            
-            // Loading state
-            btn.disabled = true;
-            icon.classList.add('animate-spin');
-            btn.classList.add('opacity-75');
-            
-            try {
-                const response = await apiRequest('/api/admin/retrain', { method: 'POST' });
-                const data = await response.json();
+                const labels = data.trends.map(t => new Date(t.date).toLocaleDateString('en-US', { weekday: 'short' }));
+                const values = data.trends.map(t => t.total_passengers);
                 
-                if (response.ok) {
-                    showToast('Success: ' + data.message);
-                } else {
-                    alert('Training failed: ' + data.error);
-                }
-            } catch (e) {
-                console.error(e);
-                alert('Failed to connect for retraining.');
-            } finally {
-                // Reset state
-                btn.disabled = false;
-                icon.classList.remove('animate-spin');
-                btn.classList.remove('opacity-75');
-            }
-        }
-
-        // Load Users
-        async function loadUsers() {
-            try {
-                const response = await apiRequest('/api/users');
-                const users = await response.json();
-                const tbody = document.getElementById('adminsTableBody');
-                
-                if (users.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">No administrators found.</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = users.map(user => {
-                    const initials = user.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
-                    const roleBadge = user.role === 'super_admin' 
-                        ? '<span class="bg-purple-100 text-purple-600 px-3 py-1 rounded-full text-xs font-semibold">Super Admin</span>'
-                        : '<span class="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-xs font-semibold">Operator</span>';
-                    
-                    const statusBadge = user.status === 'active'
-                        ? '<span class="bg-emerald-100 text-emerald-600 px-3 py-1 rounded-full text-xs font-semibold">Active</span>'
-                        : '<span class="bg-gray-100 text-gray-600 px-3 py-1 rounded-full text-xs font-semibold">Inactive</span>';
-                        
-                    return `
-                        <tr class="table-row border-b border-gray-50">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="h-9 w-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-sm font-bold text-white">${initials}</div>
-                                    <span class="font-medium text-gray-900">${user.name}</span>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4 text-gray-500">${user.email}</td>
-                            <td class="px-6 py-4">${roleBadge}</td>
-                            <td class="px-6 py-4">${statusBadge}</td>
-                            <td class="px-6 py-4 text-gray-500 text-sm">${new Date(user.created_at || Date.now()).toLocaleDateString()}</td>
-                            <td class="px-6 py-4">
-                                <div class="flex gap-2">
-                                    <button class="p-2 hover:bg-gray-100 rounded-lg transition"><i class="ph ph-pencil text-gray-500"></i></button>
-                                    <button class="p-2 hover:bg-red-50 rounded-lg transition"><i class="ph ph-trash text-red-500"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                    `;
-                }).join('');
-                
-            } catch (e) {
-                console.error("Failed to load users", e);
-            }
-        }
-
-        function processChartData(trends) {
-            // Helper to get last 7 days dates formatted
-            const labels = [];
-            const dataPoints = [];
-            const today = new Date();
-            
-            for (let i = 6; i >= 0; i--) {
-                const d = new Date(today);
-                d.setDate(today.getDate() - i);
-                const dateStr = d.toISOString().split('T')[0]; // YYYY-MM-DD
-                const dayName = d.toLocaleDateString('en-US', { weekday: 'short' }); // Mon, Tue
-                
-                labels.push(dayName);
-                
-                // Find matching data point
-                const dayData = trends.find(t => {
-                   // Handle both string date and Date object scenarios from JSON
-                   const tDate = t.date.toString().split('T')[0]; 
-                   return tDate === dateStr;
-                });
-                
-                dataPoints.push(dayData ? dayData.routes_optimized : 0);
-            }
-            
-            chartInstance.data.labels = labels;
-            chartInstance.data.datasets[0].data = dataPoints;
-            chartInstance.update();
-        }
-
-        // Initialize Charts - simple activity chart
-        function initCharts() {
-            const ctx = document.getElementById('passengerChart');
-            if (!ctx) return;
-            
-            chartInstance = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-                    datasets: [{
-                        label: 'Routes Optimized',
-                        data: [0, 0, 0, 0, 0, 0, 0],
-                        backgroundColor: '#3b82f6',
-                        borderRadius: 6
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { 
-                        legend: { display: false },
-                        tooltip: { enabled: true }
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'Passengers',
+                            data: values,
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 4,
+                            barThickness: 20
+                        }]
                     },
-                    scales: {
-                        y: { 
-                            beginAtZero: true,
-                            ticks: { color: '#94a3b8', stepSize: 1 }, 
-                            grid: { color: '#f1f5f9' } 
-                        },
-                        x: { ticks: { color: '#94a3b8' }, grid: { display: false } }
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+                            x: { grid: { display: false } }
+                        }
                     }
-                }
-            });
-        }
-
-        async function checkDbStatus() {
-            try {
-                const badge = document.getElementById('dbStatusBadge');
-                const text = document.getElementById('dbStatusText');
-                const dot = badge.querySelector('span');
-                
-                badge.classList.remove('hidden');
-                
-                const response = await fetch('/api/status');
-                const data = await response.json();
-                
-                if (data.status === 'online' && data.db_available) {
-                    // Online (Green)
-                    badge.className = "px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200";
-                    dot.className = "w-2 h-2 rounded-full bg-emerald-500 animate-none";
-                    text.innerText = "Cloud DB Online";
-                } else {
-                    // Offline (Orange)
-                    badge.className = "px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-2 bg-orange-50 text-orange-700 border border-orange-200";
-                    dot.className = "w-2 h-2 rounded-full bg-orange-500 animate-none";
-                    text.innerText = "Offline Mode (Local)";
-                }
+                });
             } catch (e) {
-                console.error("Status check failed", e);
+                console.error('Failed to load analytics:', e);
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            checkDbStatus(); // Check status on load
-            loadStops();
-            loadAnalytics();
-            loadUsers();
-            initCharts();
+        // Initial Load
+        loadStops();
+        loadAnalytics();
+        
+        // Check DB Status
+        setTimeout(() => {
+            const badge = document.getElementById('dbStatusBadge');
+            const text = document.getElementById('dbStatusText');
+            badge.classList.remove('hidden');
             
-            // Restore last section
-            const lastSection = localStorage.getItem('admin_last_section') || 'dashboard';
-            showSection(lastSection);
-        });
+            fetch('/api/status').then(res => res.json()).then(data => {
+                if(data.db_available) {
+                    text.textContent = "Online";
+                    badge.querySelector('span').classList.remove('bg-gray-400', 'animate-pulse');
+                    badge.querySelector('span').classList.add('bg-green-500');
+                    badge.classList.add('text-green-600', 'bg-green-50', 'border-green-200');
+                } else {
+                    text.textContent = "Offline Mode";
+                    badge.querySelector('span').classList.remove('bg-gray-400', 'animate-pulse');
+                    badge.querySelector('span').classList.add('bg-orange-500');
+                    badge.classList.add('text-orange-600', 'bg-orange-50', 'border-orange-200');
+                    badge.title = "Using local JSON fallback (Database unreachable)";
+                }
+            }).catch(() => {
+                text.textContent = "System Error";
+                badge.querySelector('span').classList.remove('bg-gray-400', 'animate-pulse');
+                badge.querySelector('span').classList.add('bg-red-500');
+                badge.classList.add('text-red-600', 'bg-red-50', 'border-red-200');
+            });
+        }, 1000);
+
     </script>
 </body>
 </html>
