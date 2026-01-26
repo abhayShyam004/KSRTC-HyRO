@@ -1,14 +1,12 @@
---- Starting Bus Stop Import from CSV ---
-Reading CSV from B:\Downloads\ksrtc-hyro-project-main\ksrtc-hyro-project-main\bus_stops.csv...
-Loaded 15089 rows from CSV.
-Processed 11269 valid bus stops.
-✅ Successfully saved bus stops to B:\Downloads\ksrtc-hyro-project-main\ksrtc-hyro-project-main\bus_stops.json
-
---- Category Statistics ---
-category
-regular          8726
-commercial       1735
-tourist           463
-transport_hub     328
-airport            17
-Name: count, dtype: int64
+Starting import from B:\Downloads\ksrtc-hyro-project-main\ksrtc-hyro-project-main\bus_stops.csv...
+Parsed 7247 stops.
+Connecting to DB...
+Truncating table...
+Inserting rows...
+Success! Database populated.
+Category Distribution:
+  regular: 211
+  transport_hub: 290
+  tourist: 11
+  airport: 7
+  commercial: 6728

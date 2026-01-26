@@ -14,7 +14,7 @@ except ImportError:
     sys.exit(1)
 
 def generate_historical_data(days=30):
-    print(f"Generating data for past {days} days...")
+    print(f"Generating data for past {days} days...", flush=True)
     
     # Ensure tables exist
     init_database()
@@ -42,18 +42,18 @@ def generate_historical_data(days=30):
                 
                 # Factors
                 if is_peak:
-                    demand += random.randint(15, 25)
+                    demand += random.randint(30, 50) # Stronger Peak Signal
                 elif 11 <= hour <= 16: # Mid-day
                     demand += random.randint(5, 10)
                 
                 # Stop Category Impact
                 cat = stop.get('category', 'regular')
                 if cat == 'transport_hub':
-                    demand *= 2.0
+                    demand *= 3.0 # Stronger Hub Signal
                 elif cat == 'commercial':
-                    demand *= 1.5
+                    demand *= 2.0
                 elif cat == 'airport':
-                    demand *= 1.2
+                    demand *= 1.5
                 
                 # Weekend reduction for commercial/regular, increase for tourist
                 if is_weekend:

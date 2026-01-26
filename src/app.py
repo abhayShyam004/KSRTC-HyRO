@@ -91,24 +91,33 @@ bus_stops_data = {}
 
 def load_bus_stops():
     global bus_stops_data
+    bus_stops_data = {}
+    
+    # 1. Load from Database (Primary Source)
     if DB_AVAILABLE:
         try:
+            # Use global import
             stops = get_all_stops()
-            bus_stops_data = {stop['bus_stop_id']: dict(stop) for stop in stops}
-            print(f"[OK] Loaded {len(bus_stops_data)} bus stops from database.")
-            return
+            if stops:
+                bus_stops_data = {stop['bus_stop_id']: dict(stop) for stop in stops}
+                print(f"[OK] Loaded {len(bus_stops_data)} bus stops from database (Primary).")
+                return
         except Exception as e:
             print(f"[WARN] DB load failed, falling back to JSON: {e}")
-    
-    # JSON fallback
-    try:
-        with open(BUS_STOPS_PATH, 'r') as f:
-            stops = json.load(f)
-            for stop in stops:
-                bus_stops_data[stop['bus_stop_id']] = stop
-        print(f"[OK] Loaded {len(bus_stops_data)} bus stops from JSON.")
-    except FileNotFoundError:
-        print(f"[WARN] {BUS_STOPS_PATH} not found. Using default multipliers.")
+            
+    # 2. JSON Fallback
+    if os.path.exists(BUS_STOPS_PATH):
+        try:
+            with open(BUS_STOPS_PATH, 'r', encoding='utf-8') as f:
+                stops_list = json.load(f)
+                
+            bus_stops_data = {s['bus_stop_id']: s for s in stops_list}
+            print(f"[OK] Loaded {len(bus_stops_data)} bus stops from JSON (Fallback).")
+        except Exception as e:
+            print(f"[ERROR] Failed to load JSON stops: {e}") 
+            
+    if not bus_stops_data:
+        print("[CRITICAL] No bus stops loaded! Application will be empty.")
 
 load_bus_stops()
 
@@ -146,13 +155,39 @@ def predict():
     is_peak = 1 if (8 <= hour <= 10) or (17 <= hour <= 19) else 0
     is_weekend = 1 if day_of_week >= 5 else 0
 
-    features = pd.DataFrame([{
-        'hour_of_day': hour,
-        'day_of_week': day_of_week,
-        'is_peak_hour': is_peak
-    }])
+    # Create batch of features for all requested stops
+    # This allows the model to predict specific demand for EACH stop (V2 Model)
+    unique_stop_ids = list(set(stop_ids))
+    if unique_stop_ids:
+        X_pred = pd.DataFrame([{
+            'stop_id': s_id,
+            'hour_of_day': hour,
+            'day_of_week': day_of_week,
+            'is_peak': is_peak
+        } for s_id in unique_stop_ids])
+        
+        try:
+            # Model output: Array of counts corresponding to X_pred rows
+            preds = model.predict(X_pred)
+            # Map stop_id -> predicted_count
+            stop_predictions = dict(zip(unique_stop_ids, preds))
+        except Exception as e:
+            print(f"[WARN] Model prediction failed (might be V1 model?): {e}")
+            # Fallback to V1 logic if model is old or fails
+            try:
+                base_pred = model.predict(pd.DataFrame([{
+                    'hour_of_day': hour, 
+                    'day_of_week': day_of_week, 
+                    'is_peak': is_peak
+                }]))[0]
+                stop_predictions = {sid: base_pred * float(bus_stops_data.get(sid, {}).get('demand_multiplier', 1.0)) for sid in unique_stop_ids}
+            except:
+                stop_predictions = {sid: 5 for sid in unique_stop_ids} # Ultimate fallback
+    else:
+        stop_predictions = {}
     
-    base_passengers_per_stop = model.predict(features)[0]
+    # Debug print
+    # print(f"[DEBUG] Predictions: {stop_predictions}")
 
     def calculate_stats(current_stop_ids, dist_km):
         total_pass = 0
@@ -160,18 +195,25 @@ def predict():
         if current_stop_ids:
             for s_id in current_stop_ids:
                 s_info = bus_stops_data.get(s_id, {})
-                mult = float(s_info.get('demand_multiplier', 1.0))
                 cat = s_info.get('category', 'regular')
                 s_name = s_info.get('name', f'Stop {s_id}')
                 
-                s_pass = base_passengers_per_stop * mult
+                # V2: Get direct prediction from model
+                # If stop not in predictions (shouldn't happen), default to 0
+                s_pass = stop_predictions.get(s_id, 0)
+                
+                # Minimal sanity check - don't predict negative
+                s_pass = max(0, s_pass)
+                
                 total_pass += s_pass
                 
-                if mult >= 1.5:
-                    h_stops.append({'name': s_name, 'category': cat, 'multiplier': mult})
+                # Heuristic for "High Demand" labeling (e.g. > 15 people)
+                if s_pass >= 15:
+                    h_stops.append({'name': s_name, 'category': cat, 'multiplier': 1.0}) # Mult not used for display anymore
         else:
-            total_pass = base_passengers_per_stop * num_stops
-
+            # Fallback if no specific stops provided
+            total_pass = 0 
+            
         total_pass = round(total_pass)
         l_factor = min(1.0, total_pass / BUS_CAPACITY)
         # Prevent division by zero if dist is 0
@@ -197,7 +239,9 @@ def predict():
             current_stops_objs = [bus_stops_data.get(sid) for sid in stop_ids if sid in bus_stops_data]
             
             # Run Greedy Optimizer
-            opt_stops, opt_metrics = optimize_route_order(current_stops_objs)
+            # Pass ALL stops for enrichment (avoiding DB call in the module)
+            all_stops_cache = list(bus_stops_data.values())
+            opt_stops, opt_metrics = optimize_route_order(current_stops_objs, all_stops_cache)
             
             # Extract new ID order
             opt_stop_ids = [s['bus_stop_id'] for s in opt_stops]
@@ -605,28 +649,59 @@ def api_route_recommendations():
 @app.route('/api/admin/retrain', methods=['POST'])
 @token_required
 def api_retrain_model():
-    """Trigger model retraining on latest DB data"""
+    """Trigger ASYNC model retraining on latest DB data"""
     try:
-        # Dynamic import to avoid circular dependencies/startup costs
-        from train_demand_model import train_model
+        from training_manager import TrainingManager
+        manager = TrainingManager()
         
-        print("[INFO] Starting manual model retraining...")
-        success = train_model()
+        success, msg = manager.start_training_async()
         
         if success:
-            # Reload model in memory
-            global model
-            try:
-                model = joblib.load(MODEL_PATH)
-                print("[INFO] Model reloaded in application.")
-                return jsonify({'success': True, 'message': 'Model trained and reloaded successfully.'})
-            except Exception as e:
-                return jsonify({'error': f'Training succeeded but reload failed: {str(e)}'}), 500
+            return jsonify({'success': True, 'message': msg}), 202
         else:
-            return jsonify({'error': 'Training failed. Check logs.'}), 500
+            return jsonify({'error': msg}), 409 # Conflict (already running)
+
+    except Exception as e:
+        return jsonify({'error': f"Retraining initiation error: {str(e)}"}), 500
+
+@app.route('/api/admin/training-status', methods=['GET'])
+@token_required
+def api_training_status():
+    """Poll status of background training"""
+    try:
+        from training_manager import TrainingManager
+        manager = TrainingManager()
+        return jsonify(manager.get_status())
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/admin/rollback', methods=['POST'])
+@token_required
+def api_rollback_model():
+    """Rollback model to previous version"""
+    data = request.get_json() or {}
+    model_type = data.get('model', 'demand') # demand or traffic
+    
+    try:
+        from training_manager import TrainingManager
+        manager = TrainingManager()
+        
+        success, msg = manager.rollback(model_type)
+        
+        if success:
+             # Reload model in memory if it's the demand model
+            if model_type == 'demand':
+                global model
+                try:
+                    model = joblib.load(MODEL_PATH)
+                except:
+                    pass
+            return jsonify({'success': True, 'message': msg})
+        else:
+            return jsonify({'error': msg}), 400
             
     except Exception as e:
-        return jsonify({'error': f"Retraining process error: {str(e)}"}), 500
+        return jsonify({'error': str(e)}), 500
 
 # Serve static files (HTML, CSS, JS)
 @app.route('/')

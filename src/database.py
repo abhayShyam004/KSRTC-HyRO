@@ -137,6 +137,7 @@ def get_training_data():
             cur.execute('''
                 SELECT stop_id, day_of_week, hour_of_day, is_peak, passenger_count 
                 FROM demand_history
+                WHERE timestamp >= NOW() - INTERVAL '14 days'
             ''')
             return cur.fetchall()
 

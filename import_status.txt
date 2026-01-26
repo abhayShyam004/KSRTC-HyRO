@@ -1,0 +1,4 @@
+STARTING IMPORT
+Loaded 2000 base stops from bus_stops.csv (Limit 2000)
+Successfully added 7 airports from kerala_bus_stops_with_types.csv
+SAVED 2007 total stops to bus_stops.json

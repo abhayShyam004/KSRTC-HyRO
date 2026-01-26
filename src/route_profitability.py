@@ -2,272 +2,295 @@
 Route Profitability ML Model for KSRTC-HyRO
 Predicts the most effective and profitable routes based on:
 - Distance optimization
-- Expected passenger demand
+- Expected passenger demand (Risk Discounted)
 - Fuel cost estimation
-- Revenue potential
+- Revenue potential vs Cost of Detours
 """
 import numpy as np
-from itertools import permutations
+import joblib
+import pandas as pd
+import os
 import datetime
+import json
+import math
 
-# Constants
-TICKET_PRICE_PER_KM = 1.2  # Average ticket price per km in INR
-DIESEL_PRICE = 95.21  # INR per litre
-EMPTY_MILEAGE = 4.5  # km/L when empty
-FULL_MILEAGE = 3.5  # km/L when full load
+# Load Traffic Model if available
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+MODELS_DIR = os.path.join(PROJECT_ROOT, 'models')
+TRAFFIC_MODEL_PATH = os.path.join(MODELS_DIR, 'traffic_model.pkl')
+DEMAND_MODEL_PATH = os.path.join(MODELS_DIR, 'passenger_demand_model.pkl')
+METADATA_PATH = os.path.join(MODELS_DIR, 'model_metadata.json')
+
+# --- CONFIGURATION ---
 BUS_CAPACITY = 55
+EMPTY_MILEAGE = 4.5
+FULL_MILEAGE = 3.5
+DIESEL_PRICE = 95.21
+TICKET_PRICE_PER_KM = 1.5  # Avg fare per km
+AVG_TRIP_LENGTH_RATIO = 0.6 # Avg passenger travels 60% of route
 
+# ECONOMIC PARAMETERS
+TIME_VALUE_PER_MIN = 5.0 # Penalty for delaying the bus (Fuel + Driver + Opportunity Cost)
+AVG_TICKET_PRICE_PER_BOARDING = 12.0 # Flat avg revenue per boarding if using boardings count directly
+
+traffic_model = None
+demand_model = None
+model_mae = 0.0
+
+# --- LOAD MODELS ---
+try:
+    traffic_model = joblib.load(TRAFFIC_MODEL_PATH)
+except:
+    pass 
+
+try:
+    demand_model = joblib.load(DEMAND_MODEL_PATH)
+except:
+    pass
+
+try:
+    with open(METADATA_PATH, 'r') as f:
+        meta = json.load(f)
+        model_mae = meta.get('mae', 0.0)
+except:
+    pass # Default to 0 risk discount if unknown
 
 def calculate_distance(lat1, lon1, lat2, lon2):
-    """Calculate approximate distance between two coordinates in km (Haversine)"""
-    R = 6371  # Earth's radius in km
-    lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = np.sin(dlat/2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon/2)**2
-    c = 2 * np.arcsin(np.sqrt(a))
+    """Haversine distance in km"""
+    R = 6371
+    dLat = math.radians(lat2 - lat1)
+    dLon = math.radians(lon2 - lon1)
+    a = math.sin(dLat/2) * math.sin(dLat/2) + \
+        math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * \
+        math.sin(dLon/2) * math.sin(dLon/2)
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
     return R * c
 
+def predict_duration(distance_km):
+    """Predict duration using ML model if available, else fallback to 30kmph"""
+    if traffic_model:
+        try:
+            now = datetime.datetime.now()
+            X = pd.DataFrame([{
+                'distance_km': distance_km,
+                'hour_of_day': now.hour,
+                'day_of_week': now.weekday(),
+                'is_peak': 1 if (8 <= now.hour <= 10) or (17 <= now.hour <= 19) else 0
+            }])
+            pred = traffic_model.predict(X)[0]
+            return max(5, int(pred)) # Minimum 5 mins
+        except Exception:
+            pass
+            
+    # Fallback: 30kmph average speed in city
+    return int((distance_km / 30) * 60)
 
-def get_time_multiplier():
-    """Get demand multiplier based on current time"""
-    hour = datetime.datetime.now().hour
+def predict_passengers_for_stops(stops_list, conservative=False):
+    """
+    Batch predict passengers.
+    Args:
+        conservative (bool): If True, applies Risk Discount (20% margin).
+                             If False, returns raw expectation (for display).
+    """
+    if not demand_model or not stops_list:
+        # Fallback: Multiplier * 15 (boosted base)
+        base = 15 
+        return [float(s.get('demand_multiplier', 1.0)) * base for s in stops_list]
     
-    # Peak hours have higher demand
-    if 8 <= hour <= 10:  # Morning peak
-        return 1.5
-    elif 17 <= hour <= 19:  # Evening peak
-        return 1.4
-    elif 6 <= hour <= 8:  # Early morning
-        return 1.1
-    elif 19 <= hour <= 21:  # Night
-        return 1.0
-    else:  # Off-peak
-        return 0.8
-
-
-def predict_passengers_for_stop(stop, time_multiplier=1.0):
-    """Predict expected passengers at a stop"""
-    base_passengers = 8  # Base passengers per stop
+    now = datetime.datetime.now()
+    hour = now.hour
+    day = now.weekday()
+    is_peak = 1 if (8 <= hour <= 10) or (17 <= hour <= 19) else 0
     
-    # Category multipliers
-    category_multipliers = {
-        'transport_hub': 2.0,
-        'airport': 1.8,
-        'commercial': 1.5,
-        'tourist': 1.3,
-        'regular': 1.0
-    }
+    X = pd.DataFrame([{
+        'stop_id': s['bus_stop_id'],
+        'hour_of_day': hour,
+        'day_of_week': day,
+        'is_peak': is_peak
+    } for s in stops_list])
     
-    category = stop.get('category', 'regular')
-    demand_mult = float(stop.get('demand_multiplier', 1.0))
-    cat_mult = category_multipliers.get(category, 1.0)
-    
-    return base_passengers * demand_mult * cat_mult * time_multiplier
+    try:
+        preds = demand_model.predict(X)
+        
+        if conservative:
+            # RISK DISCOUNT: 20% margin instead of raw MAE subtraction
+            # MAX(0, Pred * 0.8)
+            return [max(0, p * 0.8) for p in preds]
+        else:
+            # RAW DISPLAY: Show full potential (maybe even slightly optimistic?)
+            return [max(1, p) for p in preds]
+    except:
+        return [float(s.get('demand_multiplier', 1.0)) * 15 for s in stops_list]
 
-
-def calculate_route_profitability(stops, distances_matrix=None):
+def calculate_route_profitability(stops):
     """
     Calculate profitability for a given route (ordered list of stops)
-    Returns: profit, revenue, fuel_cost, passengers, distance
+    Returns: profit, revenue, fuel_cost, passengers, distance, duration
     """
     if len(stops) < 2:
-        return 0, 0, 0, 0, 0
+        return 0, 0, 0, 0, 0, 0
     
-    time_mult = get_time_multiplier()
     total_distance = 0
-    total_passengers = 0
     
-    # Calculate total distance and passengers
+    # Calculate Distances
     for i in range(len(stops) - 1):
         s1, s2 = stops[i], stops[i + 1]
-        
-        # Distance between consecutive stops
-        dist = calculate_distance(
-            float(s1['lat']), float(s1['lon']),
-            float(s2['lat']), float(s2['lon'])
-        )
+        dist = calculate_distance(float(s1['lat']), float(s1['lon']), float(s2['lat']), float(s2['lon']))
         total_distance += dist
         
-        # Passengers at each stop
-        total_passengers += predict_passengers_for_stop(s1, time_mult)
+    # Batch Predict Passengers (RAW for Display)
+    passenger_counts = predict_passengers_for_stops(stops, conservative=False)
+    total_passengers = sum(passenger_counts)
     
-    # Add last stop passengers
-    total_passengers += predict_passengers_for_stop(stops[-1], time_mult)
+    # Cap passengers at bus capacity (Display can show capacity, but revenue capped)
+    capped_passengers = min(total_passengers, BUS_CAPACITY)
     
-    # Cap passengers at bus capacity
-    total_passengers = min(total_passengers, BUS_CAPACITY)
+    # Revenue estimation
+    revenue = capped_passengers * AVG_TICKET_PRICE_PER_BOARDING
     
-    # Revenue estimation (passengers × average distance × price per km)
-    avg_trip_distance = total_distance * 0.6  # Assume avg passenger travels 60% of route
-    revenue = total_passengers * avg_trip_distance * TICKET_PRICE_PER_KM
-    
-    # Fuel cost calculation with load adjustment
-    load_factor = total_passengers / BUS_CAPACITY
+    # Fuel cost
+    load_factor = capped_passengers / BUS_CAPACITY
     adjusted_mileage = EMPTY_MILEAGE - (load_factor * (EMPTY_MILEAGE - FULL_MILEAGE))
+    
+    # Avoid zero division
+    if adjusted_mileage <= 0: adjusted_mileage = 3.5
+    
     fuel_litres = total_distance / adjusted_mileage
     fuel_cost = fuel_litres * DIESEL_PRICE
     
-    # Profit
+    # Predict Duration (Traffic Aware)
+    duration = predict_duration(total_distance)
+    
+    # Profit (Simple)
     profit = revenue - fuel_cost
     
-    return profit, revenue, fuel_cost, total_passengers, total_distance
+    return profit, revenue, fuel_cost, total_passengers, total_distance, duration
 
+def enrich_route_economically(current_stops, all_stops_pool, max_additions=3, corridor_radius=3.0):
+    """
+    Iteratively inserts high-value intermediate stops.
+    ECONOMIC LOGIC: Uses CONSERVATIVE predictions for decision making.
+    """
+    final_route = list(current_stops)
+    
+    # If pool is empty or route too short, return matching format
+    if not all_stops_pool or len(final_route) < 2:
+        return final_route
+    
+    # Filter candidates in "Corridor" (Bounding Box Optimization)
+    lats = [float(s['lat']) for s in final_route]
+    lons = [float(s['lon']) for s in final_route]
+    min_lat, max_lat = min(lats) - 0.05, max(lats) + 0.05
+    min_lon, max_lon = min(lons) - 0.05, max(lons) + 0.05
+    
+    current_ids = {s['bus_stop_id'] for s in final_route}
+    candidates = [
+        s for s in all_stops_pool 
+        if s['bus_stop_id'] not in current_ids
+        and min_lat <= float(s['lat']) <= max_lat
+        and min_lon <= float(s['lon']) <= max_lon
+    ]
+    
+    if not candidates:
+        return final_route
+    
+    # BATCH PREDICT candidates (CONSERVATIVE for Decision)
+    candidate_demands = predict_passengers_for_stops(candidates, conservative=True)
+    candidate_map = {c['bus_stop_id']: d for c, d in zip(candidates, candidate_demands)}
+    
+    # Greedy Insertion Loop
+    for _ in range(max_additions):
+        best_profit_gain = 0
+        best_candidate = None
+        best_insert_idx = -1
+        
+        # Try inserting each candidate at each position
+        for cand in candidates:
+            if cand['bus_stop_id'] in current_ids:
+                continue
+                
+            pred_demand = candidate_map.get(cand['bus_stop_id'], 0)
+            if pred_demand < 1: # Ignore low demand noise
+                continue
+                
+            revenue_gain = pred_demand * AVG_TICKET_PRICE_PER_BOARDING
+            
+            # Find best insertion point for this candidate to minimize detour
+            local_best_detour_cost = float('inf')
+            local_best_idx = -1
+            
+            for i in range(len(final_route) - 1):
+                s1 = final_route[i]
+                s2 = final_route[i+1]
+                
+                # Distances
+                d1 = calculate_distance(float(s1['lat']), float(s1['lon']), float(cand['lat']), float(cand['lon']))
+                d2 = calculate_distance(float(cand['lat']), float(cand['lon']), float(s2['lat']), float(s2['lon']))
+                d_orig = calculate_distance(float(s1['lat']), float(s1['lon']), float(s2['lat']), float(s2['lon']))
+                
+                detour_km = (d1 + d2) - d_orig
+                
+                # Traffic & Fuel Cost
+                # Fuel
+                fuel_cost = (detour_km / 4.0) * DIESEL_PRICE
+                
+                # Time
+                # We can approximate time = detour_km / 30kmph * 60 min OR use prediction
+                # Using linear approx for speed here to be fast inside double loop
+                detour_min = (detour_km / 30) * 60 
+                time_cost = detour_min * TIME_VALUE_PER_MIN
+                
+                total_cost = fuel_cost + time_cost
+                
+                if total_cost < local_best_detour_cost:
+                    local_best_detour_cost = total_cost
+                    local_best_idx = i + 1
+            
+            # Net Benefit
+            net_profit_gain = revenue_gain - local_best_detour_cost
+            
+            if net_profit_gain > best_profit_gain and net_profit_gain > 0:
+                best_profit_gain = net_profit_gain
+                best_candidate = cand
+                best_insert_idx = local_best_idx
+        
+        # If we found a profitable insertion
+        if best_candidate and best_profit_gain > 10: # Minimum ₹10 gain to justify complexity
+            final_route.insert(best_insert_idx, best_candidate)
+            current_ids.add(best_candidate['bus_stop_id'])
+            # print(f"[OPTIMIZER] Added {best_candidate['name']} (+₹{best_profit_gain:.2f})")
+        else:
+            break # No more profitable additions possible
+            
+    return final_route
 
-def optimize_route_order(stops):
+def optimize_route_order(stops, all_stops_pool=None):
     """
-    Find the optimal order of stops to maximize profitability
-    Uses a greedy nearest-neighbor approach for efficiency
+    Refined Optimizer:
+    1. Basic Greedy Sort (if unordered)
+    2. Economic Enrichment (Insert intermediate stops)
     """
-    if len(stops) <= 2:
-        return stops, calculate_route_profitability(stops)
+    # 1. Start with provided stops
+    base_route = list(stops)
     
-    # Start with the highest demand stop
-    remaining = list(stops)
-    remaining.sort(key=lambda s: float(s.get('demand_multiplier', 1.0)), reverse=True)
-    
-    optimized = [remaining.pop(0)]
-    
-    # Greedy nearest neighbor with demand weighting
-    while remaining:
-        last = optimized[-1]
+    # Use passed pool or fallback to empty (prevent DB hit here)
+    if all_stops_pool is None:
+        all_stops_pool = []
         
-        # Score = demand / distance (prefer high demand, close stops)
-        best_score = -1
-        best_idx = 0
-        
-        for i, stop in enumerate(remaining):
-            dist = calculate_distance(
-                float(last['lat']), float(last['lon']),
-                float(stop['lat']), float(stop['lon'])
-            )
-            demand = float(stop.get('demand_multiplier', 1.0))
-            
-            # Avoid division by zero
-            score = demand / max(dist, 0.1)
-            
-            if score > best_score:
-                best_score = score
-                best_idx = i
-        
-        optimized.append(remaining.pop(best_idx))
+    enriched_route = enrich_route_economically(base_route, all_stops_pool)
     
-    profit, revenue, fuel_cost, passengers, distance = calculate_route_profitability(optimized)
+    # Calculate Final Stats
+    profit, revenue, fuel_cost, passengers, distance, duration = calculate_route_profitability(enriched_route)
     
-    return optimized, {
+    return enriched_route, {
         'profit': round(profit, 2),
         'revenue': round(revenue, 2),
         'fuel_cost': round(fuel_cost, 2),
         'passengers': int(passengers),
-        'distance_km': round(distance, 2)
+        'distance_km': round(distance, 2),
+        'duration_min': int(duration)
     }
-
-
-def find_most_profitable_routes(all_stops, num_suggestions=5, min_stops=3, max_stops=6):
-    """
-    Analyze all possible route combinations and find the most profitable ones
-    Returns top N most profitable route suggestions
-    """
-    if len(all_stops) < min_stops:
-        return []
-    
-    suggestions = []
-    time_mult = get_time_multiplier()
-    
-    # Group stops by district for regional routes
-    districts = {}
-    for stop in all_stops:
-        district = stop.get('district', 'Unknown')
-        if district not in districts:
-            districts[district] = []
-        districts[district].append(stop)
-    
-    # Strategy 1: High-demand hub connections
-    hubs = [s for s in all_stops if float(s.get('demand_multiplier', 1.0)) >= 1.5]
-    
-    if len(hubs) >= 3:
-        optimized, metrics = optimize_route_order(hubs[:max_stops])
-        if metrics['profit'] > 0:
-            suggestions.append({
-                'route_name': 'Hub Express',
-                'description': 'Connects major transport hubs for maximum passenger pickup',
-                'stops': optimized,
-                'metrics': metrics,
-                'score': metrics['profit'] / max(metrics['distance_km'], 1)  # Profit per km
-            })
-    
-    # Strategy 2: District-wise profitable routes
-    for district, stops in districts.items():
-        if len(stops) >= min_stops:
-            optimized, metrics = optimize_route_order(stops[:max_stops])
-            if metrics['profit'] > 0:
-                suggestions.append({
-                    'route_name': f'{district} Circuit',
-                    'description': f'Optimized route within {district} district',
-                    'stops': optimized,
-                    'metrics': metrics,
-                    'score': metrics['profit'] / max(metrics['distance_km'], 1)
-                })
-    
-    # Strategy 3: Airport connector
-    airports = [s for s in all_stops if s.get('category') == 'airport']
-    if airports:
-        # Find nearby high-demand stops to each airport
-        for airport in airports:
-            nearby = []
-            for stop in all_stops:
-                if stop['bus_stop_id'] != airport['bus_stop_id']:
-                    dist = calculate_distance(
-                        float(airport['lat']), float(airport['lon']),
-                        float(stop['lat']), float(stop['lon'])
-                    )
-                    if dist < 50:  # Within 50km
-                        nearby.append((stop, dist))
-            
-            nearby.sort(key=lambda x: x[1])
-            route_stops = [airport] + [s[0] for s in nearby[:max_stops-1]]
-            
-            if len(route_stops) >= min_stops:
-                optimized, metrics = optimize_route_order(route_stops)
-                if metrics['profit'] > 0:
-                    suggestions.append({
-                        'route_name': f'{airport["name"]} Shuttle',
-                        'description': 'Airport connector with high passenger potential',
-                        'stops': optimized,
-                        'metrics': metrics,
-                        'score': metrics['profit'] / max(metrics['distance_km'], 1) * 1.2  # Boost airport routes
-                    })
-    
-    # Strategy 4: Commercial corridor
-    commercial = [s for s in all_stops if s.get('category') in ['commercial', 'transport_hub']]
-    if len(commercial) >= min_stops:
-        optimized, metrics = optimize_route_order(commercial[:max_stops])
-        if metrics['profit'] > 0:
-            suggestions.append({
-                'route_name': 'Business Express',
-                'description': 'Connects major commercial centers and business hubs',
-                'stops': optimized,
-                'metrics': metrics,
-                'score': metrics['profit'] / max(metrics['distance_km'], 1)
-            })
-    
-    # Sort by profitability score and return top N
-    suggestions.sort(key=lambda x: x['score'], reverse=True)
-    
-    # Clean up output
-    for s in suggestions:
-        s['stops'] = [{'id': st['bus_stop_id'], 'name': st['name']} for st in s['stops']]
-        del s['score']
-    
-    return suggestions[:num_suggestions]
-
 
 def get_route_recommendations(all_stops):
-    """
-    Main function to get route recommendations for the admin dashboard
-    """
-    return {
-        'generated_at': datetime.datetime.now().isoformat(),
-        'time_period': 'peak' if get_time_multiplier() > 1.2 else 'off-peak',
-        'recommendations': find_most_profitable_routes(all_stops)
-    }
+    """Admin dashboard recommendations (Stub)"""
+    return {'recommendations': []}

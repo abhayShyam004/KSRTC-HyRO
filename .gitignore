@@ -13,3 +13,4 @@ bus_stops.json
 
 # IDE specific folders
 .vscode/
+models/

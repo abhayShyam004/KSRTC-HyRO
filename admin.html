@@ -203,7 +203,7 @@
 
             <div class="bg-slate-50 rounded-2xl border border-gray-200 shadow-sm overflow-hidden">
                 <div class="overflow-x-auto">
-                    <table class="w-full min-w-[800px]">
+                    <table id="stopsManageTable" class="w-full min-w-[800px]">
                         <thead>
                             <tr class="text-left text-gray-500 text-xs uppercase tracking-wider border-b border-gray-100 bg-gray-50">
                                 <th class="px-6 py-4">ID</th>
@@ -282,6 +282,97 @@
                     </div>
                 </div>
                 
+                <script>
+                    async function retrainModel() {
+                        const btn = document.getElementById('retrainBtn');
+                        const statusEl = document.getElementById('trainingStatus');
+                        const originalText = btn.innerHTML;
+                        
+                        // Set loading state
+                        btn.disabled = true;
+                        btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Initiating...';
+                        
+                        try {
+                            // 1. Initiate Async Training
+                            const response = await apiRequest('/api/admin/retrain', { method: 'POST' });
+                            const data = await response.json();
+                            
+                            if (response.status === 202) {
+                                showToast('Started: ' + data.message);
+                                btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Training in progress...';
+                                
+                                // 2. Poll for Status
+                                const pollInterval = setInterval(async () => {
+                                    try {
+                                        const rInfo = await apiRequest('/api/admin/training-status');
+                                        const info = await rInfo.json();
+                                        
+                                        // Update Progress Bar
+                                        const progressBar = document.getElementById('retrainProgress');
+                                        const progressContainer = document.getElementById('retrainProgressContainer');
+                                        
+                                        if (progressContainer) {
+                                            progressContainer.classList.remove('hidden');
+                                            if (progressBar) progressBar.style.width = (info.progress || 0) + '%';
+                                        }
+
+                                        if (info.status === 'completed') {
+                                            clearInterval(pollInterval);
+                                            btn.disabled = false;
+                                            btn.innerHTML = originalText;
+                                            if (progressContainer) progressContainer.classList.add('hidden');
+                                            showToast('Training Completed Successfully!');
+                                            if(statusEl) statusEl.textContent = 'Last Run: ' + info.last_run;
+                                        } else if (info.status === 'failed') {
+                                            clearInterval(pollInterval);
+                                            btn.disabled = false;
+                                            btn.innerHTML = originalText;
+                                            if (progressContainer) progressContainer.classList.add('hidden');
+                                            alert('Training Failed: ' + info.message);
+                                        } else {
+                                            // Still running
+                                            btn.innerHTML = `<i class="ph ph-spinner animate-spin"></i> ${info.progress}% - ${info.message}`;
+                                        }
+                                    } catch(e) {
+                                        console.error("Polling error", e);
+                                    }
+                                }, 1000); // Faster poll for smooth bar
+                                
+                            } else {
+                                alert('Failed to start: ' + (data.error || 'Unknown error'));
+                                btn.disabled = false;
+                                btn.innerHTML = originalText;
+                            }
+                        } catch (e) {
+                            console.error(e);
+                            alert(`Error during training init: ${e.message}\nCheck console/logs for details.`);
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        }
+                    }
+
+                    async function rollbackModel(modelType='demand') {
+                        if(!confirm(`Are you sure you want to rollback the ${modelType} model to the previous version?`)) return;
+                        
+                        try {
+                            const response = await apiRequest('/api/admin/rollback', { 
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({model: modelType})
+                            });
+                            const data = await response.json();
+                            
+                            if (response.ok) {
+                                showToast(data.message);
+                            } else {
+                                alert('Rollback Failed: ' + data.error);
+                            }
+                        } catch (e) {
+                            alert('Network error during rollback');
+                        }
+                    }
+                </script>
+                
                 <!-- ML Model Management -->
                  <div class="bg-slate-50 rounded-2xl p-6 border border-gray-200 shadow-sm">
                     <div class="flex items-center gap-3 mb-6">
@@ -289,18 +380,30 @@
                             <i class="ph ph-brain text-xl text-purple-600"></i>
                         </div>
                         <div>
-                            <h3 class="font-bold text-gray-900">AI Model Management</h3>
-                            <p class="text-gray-500 text-sm">Self-learning system controls</p>
+                            <h3 class="font-bold text-gray-900">Machine Learning Models</h3>
+                            <p class="text-gray-500 text-sm">Manage predictive intelligence</p>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between">
-                         <div class="text-sm text-gray-600">
-                            <p>Current Model: <span class="font-semibold text-gray-900">Passenger Demand Predictor v1.0</span></p>
-                            <p class="text-xs text-gray-500 mt-1">Learns from 'demand_history' table automatically.</p>
-                        </div>
-                        <button onclick="retrainModel()" id="retrainBtn" class="bg-white border border-gray-300 hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-xl text-sm font-medium transition flex items-center gap-2">
-                            <i class="ph ph-arrows-clockwise"></i> Retrain Model Now
-                        </button>
+                    
+                    <div class="flex flex-col md:flex-row gap-4 items-center justify-between">
+                         <div>
+                            <p class="text-sm text-gray-600 mb-1">Current Status: <span class="font-medium text-green-600">Active</span></p>
+                            <p class="text-xs text-gray-500" id="trainingStatus">Ready to learn</p>
+                         </div>
+                         <div class="flex flex-col items-end gap-2">
+                             <div class="flex gap-2">
+                                 <button onclick="rollbackModel('demand')" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-xl font-medium transition-colors flex items-center gap-2">
+                                    <i class="ph ph-arrow-u-up-left"></i> Rollback
+                                 </button>
+                                 <button id="retrainBtn" onclick="retrainModel()" class="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-xl font-medium transition-colors shadow-lg shadow-purple-200 flex items-center gap-2">
+                                    <i class="ph ph-lightning"></i> Retrain Model Now
+                                 </button>
+                             </div>
+                             <!-- Progress Bar -->
+                             <div id="retrainProgressContainer" class="hidden w-full max-w-xs bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                <div id="retrainProgress" class="bg-purple-600 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+                             </div>
+                         </div>
                     </div>
                 </div>
             </div>
@@ -496,7 +599,11 @@
             try {
                 const response = await apiRequest('/api/stops');
                 busStops = await response.json();
-                renderStopsTable();
+                
+                // Preserve search if active
+                const searchVal = document.getElementById('stopsSearchInput')?.value || '';
+                renderStopsTable(searchVal);
+                
                 document.getElementById('activeStops').textContent = busStops.length;
             } catch (e) {
                 console.error('Failed to load stops:', e);
@@ -512,77 +619,160 @@
             }
         }
 
-        // Render stops table
-        function renderStopsTable() {
-            const tbody = document.getElementById('stopsTableBody');
-            if (!busStops.length) {
-                tbody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-500">No stops found.</td></tr>';
+        // Render stops table (Optimized with Lazy Accordions)
+        function renderStopsTable(filterText = '') {
+            const table = document.getElementById('stopsManageTable');
+            if (!table) return;
+            
+            const filter = filterText ? filterText.toUpperCase() : '';
+            
+            // Clear existing rows (remove all tbodies to reset)
+            Array.from(table.tBodies).forEach(tb => tb.remove());
+            
+            if (!busStops || !busStops.length) {
+                const emptyBody = document.createElement('tbody');
+                emptyBody.innerHTML = '<tr><td colspan="7" class="text-center py-8 text-gray-500">No stops found.</td></tr>';
+                table.appendChild(emptyBody);
                 return;
             }
-            
-            // 1. Sort by District (Geographic North->South) then Name
-            const districtOrder = [
-                "Kasaragod", "Kasargod", "Kannur", "Wayanad", "Kozhikode", "Malappuram", "Palakkad", 
-                "Thrissur", "Ernakulam", "Idukki", "Kottayam", "Alappuzha", 
-                "Pathanamthitta", "Kollam", "Thiruvananthapuram"
-            ];
 
-            const sortedStops = [...busStops].sort((a, b) => {
-                const distA = a.district || "";
-                const distB = b.district || "";
+            if (filter) {
+                // SEARCH MODE: Flat list of matches
+                const filteredStops = busStops.filter(s => 
+                    s.name.toUpperCase().includes(filter) || 
+                    (s.district && s.district.toUpperCase().includes(filter))
+                );
                 
-                let indexA = districtOrder.indexOf(distA);
-                let indexB = districtOrder.indexOf(distB);
+                const searchBody = document.createElement('tbody');
+                if (filteredStops.length === 0) {
+                    searchBody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-gray-500">No matches found for "${filterText}"</td></tr>`;
+                } else {
+                    // Limit to 200 matches for performance
+                    const limit = 200;
+                    renderDistrictRows(searchBody, filteredStops.slice(0, limit));
+                    if (filteredStops.length > limit) {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `<td colspan="7" class="px-6 py-4 text-center text-gray-400 bg-gray-50 text-xs">Showing first ${limit} of ${filteredStops.length} results. Refine search for more.</td>`;
+                        searchBody.appendChild(row);
+                    }
+                }
+                table.appendChild(searchBody);
+            } else {
+                // NORMAL MODE: Grouped district view
+                const grouped = busStops.reduce((acc, stop) => {
+                    const dist = stop.district || 'Uncategorized';
+                    if (!acc[dist]) acc[dist] = [];
+                    acc[dist].push(stop);
+                    return acc;
+                }, {});
                 
-                if (indexA === -1) indexA = 999;
-                if (indexB === -1) indexB = 999;
-
-                if (indexA !== indexB) return indexA - indexB;
-                return a.name.localeCompare(b.name);
-            });
-
-            let currentDistrict = '';
-            let html = '';
-            let globalIndex = 1;
-
-            sortedStops.forEach((stop, index) => {
-                // District Header
-                if (stop.district !== currentDistrict) {
-                    currentDistrict = stop.district || "Uncategorized";
-                    html += `
-                        <tr class="district-header bg-slate-50/50 border-b border-gray-100">
-                            <td colspan="7" class="px-6 py-1.5 text-[11px] font-semibold text-gray-400 bg-gray-50/50">
-                                ${currentDistrict}
+                const districtOrder = [
+                    "Kasaragod", "Kasargod", "Kannur", "Wayanad", "Kozhikode", "Malappuram", "Palakkad", 
+                    "Thrissur", "Ernakulam", "Idukki", "Kottayam", "Alappuzha", 
+                    "Pathanamthitta", "Kollam", "Thiruvananthapuram", "Uncategorized"
+                ];
+                
+                const sortedDistricts = Object.keys(grouped).sort((a, b) => {
+                    let indexA = districtOrder.indexOf(a);
+                    let indexB = districtOrder.indexOf(b);
+                    if (indexA === -1) indexA = 999;
+                    if (indexB === -1) indexB = 999;
+                    return indexA - indexB;
+                });
+                
+                sortedDistricts.forEach(district => {
+                    const stops = grouped[district];
+                    const cleanName = district.replace(/[^a-zA-Z0-9]/g, ''); // sanitized ID
+                    const groupId = `group-${cleanName}`;
+                    
+                    const headerBody = document.createElement('tbody');
+                    headerBody.className = "hover:bg-gray-50 bg-white border-b border-gray-100 transition-colors district-header-body";
+                    
+                    headerBody.innerHTML = `
+                        <tr style="cursor: pointer;" onclick="toggleDistrict(this, '${groupId}')" data-district="${district.replace(/"/g, '&quot;')}">
+                            <td colspan="7" class="px-6 py-3">
+                                <div class="flex items-center justify-between pointer-events-none">
+                                    <div class="flex items-center gap-3">
+                                        <div class="p-1.5 bg-blue-50 text-blue-600 rounded-lg">
+                                            <i class="ph ph-map-trifold"></i>
+                                        </div>
+                                        <span class="font-bold text-gray-800 text-sm">${district}</span>
+                                        <span class="bg-gray-100 text-gray-500 px-2 py-0.5 rounded text-xs font-semibold">${stops.length}</span>
+                                    </div>
+                                    <i class="ph ph-caret-down text-gray-400 transform transition-transform duration-200" id="icon-${cleanName}"></i>
+                                </div>
                             </td>
                         </tr>
                     `;
-                }
-
-                const categoryBadge = getCategoryBadge(stop.category);
+                    table.appendChild(headerBody);
+                    
+                    const contentBody = document.createElement('tbody');
+                    contentBody.className = "hidden bg-white/50";
+                    contentBody.id = groupId;
+                    table.appendChild(contentBody);
+                });
+            }
+        }
+        
+        // GLOBAL TOGGLE FUNCTION
+        window.toggleDistrict = function(trElement, groupId) {
+            console.log("Toggle clicked:", groupId);
+            const contentBody = document.getElementById(groupId);
+            if (!contentBody) {
+                console.error("Content body not found:", groupId);
+                return;
+            }
+            
+            const districtName = trElement.getAttribute('data-district');
+            const cleanName = districtName.replace(/[^a-zA-Z0-9]/g, '');
+            const icon = document.getElementById(`icon-${cleanName}`);
+            const isHidden = contentBody.classList.contains('hidden');
+            
+            if (isHidden) {
+                console.log("Expanding...");
+                contentBody.classList.remove('hidden');
+                if(icon) icon.style.transform = 'rotate(180deg)';
                 
+                // Lazy Render if empty
+                if (contentBody.children.length === 0) {
+                     console.log("Lazy rendering stops for:", districtName);
+                     // Find stops again (Global lookup)
+                     const stops = busStops.filter(s => (s.district || 'Uncategorized') === districtName);
+                     renderDistrictRows(contentBody, stops);
+                }
+            } else {
+                console.log("Collapsing...");
+                contentBody.classList.add('hidden');
+                if(icon) icon.style.transform = 'rotate(0deg)';
+            }
+        };
+        
+        function renderDistrictRows(container, stops) {
+            let html = '';
+            stops.forEach((stop, idx) => {
+                const categoryBadge = getCategoryBadge(stop.category);
                 html += `
-                    <tr class="table-row border-b border-gray-50 stop-row">
-                        <td class="px-6 py-4 text-gray-900 font-medium text-sm">
-                            ${globalIndex++}
+                    <tr class="border-b border-gray-50 stop-row hover:bg-white transition bg-slate-50/20">
+                        <td class="px-6 py-3 text-gray-400 font-mono text-xs pl-12">
+                            ${idx + 1}
                         </td>
-                        <td class="px-6 py-4 font-medium text-gray-900 stop-name">${stop.name}</td>
-                        <td class="px-6 py-4 text-gray-500">${stop.district}</td>
-                        <td class="px-6 py-4">${categoryBadge}</td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-3 font-medium text-gray-900 stop-name">${stop.name}</td>
+                        <td class="px-6 py-3 text-gray-500 text-xs">${stop.district || '-'}</td>
+                        <td class="px-6 py-3">${categoryBadge}</td>
+                        <td class="px-6 py-3">
                             <span class="bg-blue-100 text-blue-600 px-2 py-1 rounded-full text-xs font-mono font-semibold">${stop.demand_multiplier || 1.0}x</span>
                         </td>
-                        <td class="px-6 py-4 text-gray-400 text-xs font-mono">${stop.lat.toFixed(4)}, ${stop.lon.toFixed(4)}</td>
-                        <td class="px-6 py-4">
+                        <td class="px-6 py-3 text-gray-400 text-xs font-mono">${parseFloat(stop.lat).toFixed(4)}, ${parseFloat(stop.lon).toFixed(4)}</td>
+                        <td class="px-6 py-3">
                             <div class="flex gap-2">
-                                <button onclick="editStop(${stop.bus_stop_id})" class="p-2 hover:bg-gray-100 rounded-lg transition"><i class="ph ph-pencil text-gray-500"></i></button>
-                                <button onclick="deleteStop(${stop.bus_stop_id})" class="p-2 hover:bg-red-50 rounded-lg transition"><i class="ph ph-trash text-red-500"></i></button>
+                                <button onclick="editStop(${stop.bus_stop_id})" class="p-1.5 hover:bg-blue-50 text-gray-400 hover:text-blue-600 rounded transition"><i class="ph ph-pencil"></i></button>
+                                <button onclick="deleteStop(${stop.bus_stop_id})" class="p-1.5 hover:bg-red-50 text-gray-400 hover:text-red-500 rounded transition"><i class="ph ph-trash"></i></button>
                             </div>
                         </td>
                     </tr>
                 `;
             });
-            
-            tbody.innerHTML = html;
+            container.innerHTML = html;
         }
 
         function getCategoryBadge(category) {
@@ -717,43 +907,13 @@
 
         // Toast
         
+        let searchTimeout;
         function filterStopsTable() {
-            const input = document.getElementById('stopsSearchInput');
-            const filter = input.value.toUpperCase();
-            const tableBody = document.getElementById("stopsTableBody");
-            const rows = tableBody.getElementsByTagName("tr");
-            
-            let currentHeader = null;
-            let hasVisibleChildren = false;
-
-            // Pass 1: Filter Stops
-            for (let i = 0; i < rows.length; i++) {
-                const row = rows[i];
-                
-                if (row.classList.contains('district-header')) {
-                    // New section starting
-                    // If we had a previous header, we decide its visibility based on children (handled dynamically below? no need)
-                    // We just reset for the new section
-                    currentHeader = row;
-                    hasVisibleChildren = false;
-                    
-                    // Initially hide header, we reveal it if we find a visible child
-                    row.style.display = "none"; 
-                } else if (row.classList.contains('stop-row')) {
-                    const nameCell = row.querySelector('.stop-name');
-                    const txtValue = nameCell ? (nameCell.textContent || nameCell.innerText) : "";
-                    
-                    const isMatch = txtValue.toUpperCase().indexOf(filter) > -1;
-                    
-                    if (isMatch) {
-                        row.style.display = "";
-                        // Since this child is visible, its header must be visible
-                        if (currentHeader) currentHeader.style.display = "";
-                    } else {
-                        row.style.display = "none";
-                    }
-                }
-            }
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const input = document.getElementById('stopsSearchInput');
+                renderStopsTable(input.value);
+            }, 250);
         }
         function showToast(message) {
             const toast = document.getElementById('toast');
