@@ -44,3 +44,53 @@ Press CTRL+C to quit
 127.0.0.1 - - [27/Jan/2026 13:14:20] "POST /predict HTTP/1.1" 200 -
 [DEBUG] Predict request data: {'distance_km': 15.5, 'num_stops': 5, 'stop_ids': [4, 8, 11, 155, 156]}
 127.0.0.1 - - [27/Jan/2026 13:14:58] "POST /predict HTTP/1.1" 200 -
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\app.py', reloading
+Exception in thread Thread-1 (serve_forever) * Restarting with stat
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 2004 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\train_demand_model.py', reloading
+ * Restarting with stat
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 1013 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\app.py', reloading
+ * Restarting with stat
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 1013 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\database.py', reloading
+ * Restarting with stat
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 1013 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\database.py', reloading
+ * Restarting with stat
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 1013 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569

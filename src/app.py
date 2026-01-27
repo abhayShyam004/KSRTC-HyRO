@@ -11,6 +11,7 @@ import joblib
 import pandas as pd
 import datetime
 import json
+import gc
 
 # Import database module
 try:
@@ -117,10 +118,16 @@ try:
             meta = json.load(f)
             print(f"[MODEL] Version: {meta.get('version', 'unknown')} | SHA256: {meta.get('sha256', 'unknown')[:8]}...")
             
+    # Free up memory used during load
+    gc.collect()
+            
 except Exception as e:
     print(f"[CRITICAL] Failed to load model: {e}")
     # In production, we want to fail fast.
-    # Note: On local dev, you might want to suppress this, but per production rules:
+    print("-" * 50)
+    print("DEPLOYMENT TIP: The model file is missing. This usually happens because 'models/' is in .gitignore.")
+    print("Ensure your Render build command includes: python scripts/render_build.py")
+    print("-" * 50)
     print("Application cannot start without prediction model.")
     sys.exit(1)
 

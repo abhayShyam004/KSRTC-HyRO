@@ -20,3 +20,53 @@ Press CTRL+C to quit
 [OK] Loaded 2004 bus stops from database (Primary).
  * Debugger is active!
  * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\app.py', reloading
+ * Restarting with stat
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 2004 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\train_demand_model.py', reloading
+ * Restarting with stat
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 1013 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\app.py', reloading
+ * Restarting with stat
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 1013 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\database.py', reloading
+ * Restarting with stat
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 1013 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\database.py', reloading
+ * Restarting with stat
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 1013 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569

@@ -129,7 +129,7 @@ def train_model():
             ('numerical', 'passthrough', ['hour_of_day', 'day_of_week', 'is_peak']),
             ('categorical', TargetEncoder(cols=['stop_id'], alpha=SMOOTHING_ALPHA), ['stop_id'])
         ])),
-        ('regressor', RandomForestRegressor(n_estimators=100, random_state=42, n_jobs=-1))
+        ('regressor', RandomForestRegressor(n_estimators=30, max_depth=12, min_samples_leaf=5, random_state=42, n_jobs=-1))
     ])
     
     # 4. Cross-Validation (Baseline Check)

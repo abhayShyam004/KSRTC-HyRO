@@ -35,11 +35,11 @@ def main():
     module_dummy = os.path.join(PROJECT_ROOT, 'src', 'create_dummy_data.py')
     run_python_module(module_dummy, "Generating Dummy Historical Data (Past 30 Days)")
     
-    # 3. Train the Model
-    # This creates the .pkl file that app.py requires.
-    print("[3/3] Training Demand Model...")
-    module_train = os.path.join(PROJECT_ROOT, 'scripts', 'train_offline.py')
-    run_python_module(module_train, "Training Demand Model")
+    # 3. Train the Model -> SKIPPED (Model is now committed to repo)
+    # print("[3/3] Training Demand Model...")
+    # module_train = os.path.join(PROJECT_ROOT, 'scripts', 'train_offline.py')
+    # run_python_module(module_train, "Training Demand Model")
+    print("[3/3] Using Pre-trained Model (Training skipped)")
     
     # Final check
     model_path = os.path.join(PROJECT_ROOT, 'models', 'passenger_demand_model.pkl')

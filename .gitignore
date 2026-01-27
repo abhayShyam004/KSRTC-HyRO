@@ -9,8 +9,9 @@ osrm_data/
 # Generated data and output files
 data/*.csv
 output/
-bus_stops.json
 
 # IDE specific folders
 .vscode/
-models/
+models/*
+!models/passenger_demand_model.pkl
+!models/model_metadata.json
