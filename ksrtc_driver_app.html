@@ -212,8 +212,8 @@
                     <p id="mobileValDistance" class="text-xs font-bold text-gray-900">--</p>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-2 text-center">
-                    <i class="ph ph-users text-blue-500 text-lg mb-1"></i>
-                    <p id="mobileValPassengers" class="text-xs font-bold text-gray-900">--</p>
+                    <i class="ph ph-map-trifold text-purple-500 text-lg mb-1"></i>
+                    <p id="mobileValStops" class="text-xs font-bold text-gray-900">--</p>
                 </div>
                 <div class="bg-gray-50 rounded-xl p-2 text-center">
                     <i class="ph ph-gas-pump text-red-500 text-lg mb-1"></i>
@@ -325,10 +325,7 @@
                         <div class="h-10 w-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center mr-4 shadow-sm"><i class="ph ph-gas-pump text-xl"></i></div>
                         <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Fuel Cost</p><p id="valCost" class="text-lg font-bold text-gray-800 leading-none mt-0.5">₹0</p></div>
                     </div>
-                    <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
-                        <div class="h-10 w-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center mr-4 shadow-sm"><i class="ph ph-users text-xl"></i></div>
-                        <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Passengers</p><p id="valPassengers" class="text-lg font-bold text-gray-800 leading-none mt-0.5">--</p></div>
-                    </div>
+
                     <div id="intermediateCountContainer" class="hidden flex items-center p-3 hover:bg-gray-50 rounded-lg transition border-t border-gray-50">
                         <div class="h-10 w-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center mr-4 shadow-sm"><i class="ph ph-dots-three-circle text-xl"></i></div>
                         <div><p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Path Stops</p><p id="valIntermediate" class="text-lg font-bold text-gray-800 leading-none mt-0.5">0 found</p></div>
@@ -416,16 +413,16 @@
         let mobileAwesomplete = null;
 
         // --- MOBILE UI UPDATES ---
-        function updateMobileStats(duration, distance, passengers, cost) {
+        function updateMobileStats(duration, distance, intermediateStops, cost) {
             const els = {
                 dur: document.getElementById('mobileValDuration'),
                 dist: document.getElementById('mobileValDistance'),
-                pass: document.getElementById('mobileValPassengers'),
+                stops: document.getElementById('mobileValStops'),
                 cost: document.getElementById('mobileValCost')
             };
             if(els.dur) els.dur.innerText = Math.round(duration) + ' min';
             if(els.dist) els.dist.innerText = distance.toFixed(1) + ' km';
-            if(els.pass) els.pass.innerText = passengers || '--';
+            if(els.stops) els.stops.innerText = intermediateStops + ' stops';
             if(els.cost) els.cost.innerText = '₹' + (cost || '--');
         }
 
@@ -1193,9 +1190,104 @@
                     if (!routeData.routes || routeData.routes.length === 0) throw new Error('No route found');
                     
                     originalRouteGeoJSON = routeData.routes[0];
-                    const distance = originalRouteGeoJSON.distance / 1000;
+
+                    // --- BEACH ROAD AVOIDANCE LOGIC [NEW] ---
+                    // Define Bounding Box for Beach Road (Calicut)
+                    // Updated: Widened to cover southern part (approx 75.772)
+                    const BEACH_BOX = {
+                        minLat: 11.24, maxLat: 11.30,
+                        minLon: 75.76, maxLon: 75.773 
+                    };
+
+                    // Helper to check if route traverses Beach Road significantly
+                    const checkRouteSafety = (geojson) => {
+                        if (!geojson || !geojson.geometry || !geojson.geometry.coordinates) return true;
+                        
+                        // Count points inside the danger box
+                        let riskPoints = 0;
+                        const coords = geojson.geometry.coordinates; // [lon, lat]
+                        
+                        for (let pt of coords) {
+                            const lon = pt[0];
+                            const lat = pt[1];
+                            if (lat >= BEACH_BOX.minLat && lat <= BEACH_BOX.maxLat &&
+                                lon >= BEACH_BOX.minLon && lon <= BEACH_BOX.maxLon) {
+                                riskPoints++;
+                                // Log the first violation for debugging
+                                if (riskPoints === 1) console.log(`[VIOLATION] Found point on Beach Road: ${lat}, ${lon}`);
+                            }
+                        }
+                        
+                        // STRICT MODE: If even 1 point is in the zone, reroute.
+                        if (riskPoints > 0) {
+                            console.warn(`[ROUTE] Safety Violation: ${riskPoints} points inside Beach Road zone.`);
+                            return false;
+                        }
+                        return true; 
+                    };
+
+                    let finalRouteGeoJSON = originalRouteGeoJSON;
+                    
+                    // If route is UNSAFE (takes Beach Road), force reroute via Kannur Road
+                    if (!checkRouteSafety(originalRouteGeoJSON)) {
+                        console.warn("[ROUTE] Beach Road detected! Rerouting via Kannur Road...");
+                        showToast("Avoided Beach Road (Traffic/Safety)", "info");
+                        
+                        // Define Via Point: Kannur Road / Nadakkavu
+                        const VIA_POINT = "75.77400,11.27200"; 
+                        
+                        // Construct new URL with Via Point injected in the middle
+                        // We use the same start/end, but force OSRM to go through the via point
+                        // OSRM format: start;via;end
+                        // Note: To be robust, we should find where in the stop sequence the beach road segment is.
+                        // But for simplicity, we append the Via Point to the coordinate list.
+                        // Ideally, we treat it as a "waypoint".
+                        
+                        // Strategy: Add VIA Point to the request URL's coordinate string
+                        // We need to inject it *between* the stops. simpler: just add it to the list passed to OSRM?
+                        // No, OSRM expects: lat,lon;lat,lon
+                        // If we have stops A -> B -> C, and A->B is the beach part, we need A -> VIA -> B -> C.
+                        
+                        // IMPROVED STRATEGY:
+                        // Just re-request entirely with the via point added as a "hint" isn't standard OSRM.
+                        // We must add it as a coordinate.
+                        // Since we don't know *where* to insert it easily without complex logic,
+                        // we will append it to the coordinates list, BUT OSRM might treat it as a destination.
+                        // Correct OSRM usage for "via": treat it as a coordinate.
+                        
+                        // Quick fix: Add Kannur Road waypoint to the end of request? No, that changes destination.
+                        // We will inject it approximately in the middle of the coordinate set for the URL
+                        // effectively adding it as a stop, but we won't show it in the UI list (currentRoute).
+                        
+                        // 1. Get all coords
+                        const coordList = currentRoute.map(stop => `${stop.lon.toFixed(5)},${stop.lat.toFixed(5)}`);
+                        
+                        // 2. Insert Via Point in the middle (heuristic)
+                        const midIndex = Math.floor(coordList.length / 2);
+                        coordList.splice(midIndex, 0, VIA_POINT);
+                        
+                        const newCoords = coordList.join(';');
+                        const safeUrl = `https://router.project-osrm.org/route/v1/driving/${newCoords}?geometries=geojson&overview=full`;
+                        
+                        try {
+                            const safeResponse = await fetchWithTimeout(safeUrl);
+                            if (safeResponse.ok) {
+                                const safeData = await safeResponse.json();
+                                if (safeData.routes && safeData.routes.length > 0) {
+                                    finalRouteGeoJSON = safeData.routes[0];
+                                    console.log("[ROUTE] Safe route calculated via Kannur Road.");
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Failed to calculate safe detour:", e);
+                            // Fallback to original if safe route fails
+                        }
+                    }
+
+                    const distance = finalRouteGeoJSON.distance / 1000;
                     
                     // 2. Get AI Prediction & Optimization
+                    // Note: We send the potentially NEW distance/path to prediction
                     const predictionResponse = await fetchWithTimeout(`${API_BASE_URL}/predict`, {
                         method: 'POST', headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ 
@@ -1208,10 +1300,9 @@
                     if (!predictionResponse.ok) throw new Error('Prediction Failed');
                     const predictionData = await predictionResponse.json();
                     
-                    let finalRouteGeoJSON = originalRouteGeoJSON;
                     let finalStats = {
                         distance: distance,
-                        duration: originalRouteGeoJSON.duration / 60,
+                        duration: finalRouteGeoJSON.duration / 60,
                         passengers: predictionData.expected_passengers,
                         cost: predictionData.estimated_fuel_cost_inr,
                         savings: 0
@@ -1234,11 +1325,11 @@
                     // Update Main Metrics Card
                     const dDur = document.getElementById('valDuration'); if(dDur) dDur.innerText = Math.round(finalStats.duration) + " min";
                     const dDist = document.getElementById('valDistance'); if(dDist) dDist.innerText = finalStats.distance.toFixed(1) + " km";
-                    const dPass = document.getElementById('valPassengers'); if(dPass) dPass.innerText = finalStats.passengers;
                     const dCost = document.getElementById('valCost'); if(dCost) dCost.innerText = "₹" + finalStats.cost;
                     
-                    // Update Mobile Stats
-                    updateMobileStats(finalStats.duration, finalStats.distance, finalStats.passengers, finalStats.cost);
+                    // Update Mobile Stats (show intermediate stops count instead of passengers)
+                    const intermediateStopsCount = Math.max(0, currentRoute.length - 2); // Exclude start/end
+                    updateMobileStats(finalStats.duration, finalStats.distance, intermediateStopsCount, finalStats.cost);
                     
                     openMetrics(); // Ensure it opens
                     

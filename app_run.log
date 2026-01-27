@@ -94,3 +94,164 @@ Exception in thread Thread-1 (serve_forever) * Restarting with stat
 [OK] Loaded 1013 bus stops from database (Primary).
  * Debugger is active!
  * Debugger PIN: 572-280-569
+127.0.0.1 - - [27/Jan/2026 22:50:27] "GET /ksrtc_driver_app.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 22:50:29] "GET /api/stops HTTP/1.1" 200 -
+[DEBUG] Predict request data: {'distance_km': 480.06559999999996, 'num_stops': 3, 'stop_ids': [17, 7, 7249]}
+127.0.0.1 - - [27/Jan/2026 22:52:28] "POST /predict HTTP/1.1" 200 -
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\populate_db_from_json.py', reloading
+ * Restarting with stat
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator DecisionTreeRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator RandomForestRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 1010 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\populate_db_from_json.py', reloading
+ * Restarting with stat
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator DecisionTreeRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator RandomForestRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 1010 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+127.0.0.1 - - [27/Jan/2026 23:17:13] "GET /ksrtc_driver_app.html HTTP/1.1" 304 -
+127.0.0.1 - - [27/Jan/2026 23:17:13] "GET /api/stops HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:17:25] "GET /ksrtc_driver_app.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:17:25] "GET /api/stops HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:17:26] "GET /favicon.ico HTTP/1.1" 404 -
+127.0.0.1 - - [27/Jan/2026 23:17:38] "GET /ksrtc_driver_app.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:17:39] "GET /api/stops HTTP/1.1" 200 -
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\app.py', reloading
+ * Restarting with stat
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator DecisionTreeRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator RandomForestRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[DEBUG] DB URL: postgresql://neondb_owner:npg_0R7oaXzqeYQK@ep-long-breeze-a1vczx8s.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+[WARN] DB load failed, falling back to JSON: name 'get_db_connection' is not defined
+[OK] Loaded 2007 bus stops from JSON (Fallback).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+127.0.0.1 - - [27/Jan/2026 23:24:08] "GET /ksrtc_driver_app.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:24:10] "GET /api/stops HTTP/1.1" 200 -
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\app.py', reloading
+ * Restarting with stat
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator DecisionTreeRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator RandomForestRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[DEBUG] DB URL: postgresql://neondb_owner:npg_0R7oaXzqeYQK@ep-long-breeze-a1vczx8s.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+[DEBUG] Raw DB Count: 2007
+[OK] Loaded 2007 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+127.0.0.1 - - [27/Jan/2026 23:34:26] "GET /ksrtc_driver_app.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:34:27] "GET /api/stops HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:34:28] "GET /favicon.ico HTTP/1.1" 404 -
+[DEBUG] Predict request data: {'distance_km': 423.8678, 'num_stops': 3, 'stop_ids': [2007, 7248, 7249]}
+[WARN] Model prediction failed: The feature names should match those that were passed during fit.
+Feature names unseen at fit time:
+- is_peak
+- stop_id
+Feature names seen at fit time, yet now missing:
+- is_peak_hour
+
+[ERROR] V1 Fallback also failed: The feature names should match those that were passed during fit.
+Feature names unseen at fit time:
+- is_peak
+Feature names seen at fit time, yet now missing:
+- is_peak_hour
+
+127.0.0.1 - - [27/Jan/2026 23:34:50] "POST /predict HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:38:23] "GET /ksrtc_driver_app.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:38:26] "GET /api/stops HTTP/1.1" 200 -
+[DEBUG] Predict request data: {'distance_km': 512.9440999999999, 'num_stops': 3, 'stop_ids': [2007, 7248, 7249]}
+[WARN] Model prediction failed: The feature names should match those that were passed during fit.
+Feature names unseen at fit time:
+- is_peak
+- stop_id
+Feature names seen at fit time, yet now missing:
+- is_peak_hour
+
+[ERROR] V1 Fallback also failed: The feature names should match those that were passed during fit.
+Feature names unseen at fit time:
+- is_peak
+Feature names seen at fit time, yet now missing:
+- is_peak_hour
+
+127.0.0.1 - - [27/Jan/2026 23:38:45] "POST /predict HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:17] "GET /admin.html HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:18] "GET /login.html HTTP/1.1" 200 -
+[INFO] User admin123 found in offline storage.
+127.0.0.1 - - [27/Jan/2026 23:39:33] "POST /api/auth/login HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:34] "GET /admin.html HTTP/1.1" 304 -
+127.0.0.1 - - [27/Jan/2026 23:39:34] "GET /api/auth/verify HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:34] "GET /api/stops HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:35] "GET /api/status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:35] "GET /api/analytics HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:48] "POST /api/admin/retrain HTTP/1.1" 202 -
+[Backup] Saved passenger_demand_model_v1769537388.pkl
+[Backup] Saved traffic_model_v1769537388.pkl
+--- Starting Robust Model Training (V3) ---
+[INFO] Fetching training data (this may take a while)...
+127.0.0.1 - - [27/Jan/2026 23:39:49] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:50] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:51] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:52] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:53] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:54] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:55] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:56] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:57] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:58] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:39:59] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:40:00] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:40:02] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:40:03] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:40:04] "GET /api/admin/training-status HTTP/1.1" 200 -
+[ERROR] Database connection failed: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+
+[TrainingManager] Failed: server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+server closed the connection unexpectedly
+	This probably means the server terminated abnormally
+	before or while processing the request.
+
+127.0.0.1 - - [27/Jan/2026 23:40:06] "GET /api/admin/training-status HTTP/1.1" 200 -
+127.0.0.1 - - [27/Jan/2026 23:40:07] "GET /api/admin/training-status HTTP/1.1" 200 -

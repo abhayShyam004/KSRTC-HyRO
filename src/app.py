@@ -19,7 +19,7 @@ try:
         init_database, seed_default_data, get_all_stops, get_stop_by_id,
         create_stop, update_stop, delete_stop, get_all_settings, update_setting,
         get_all_users, create_user, delete_user, log_route_optimization,
-        get_analytics_summary
+        get_analytics_summary, get_db_connection
     )
     DB_AVAILABLE = True
 except ImportError as e:
@@ -143,6 +143,16 @@ def load_bus_stops():
         try:
             # Use global import
             stops = get_all_stops()
+            
+            # --- DEBUG: verify DB connection and count ---
+            from database import DATABASE_URL
+            print(f"[DEBUG] DB URL: {DATABASE_URL}")
+            with get_db_connection() as conn:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT COUNT(*) FROM bus_stops")
+                    print(f"[DEBUG] Raw DB Count: {cur.fetchone()[0]}")
+            # ---------------------------------------------
+            
             if stops:
                 bus_stops_data = {stop['bus_stop_id']: dict(stop) for stop in stops}
                 print(f"[OK] Loaded {len(bus_stops_data)} bus stops from database (Primary).")
@@ -196,10 +206,22 @@ def predict():
             if not stop_ids:
                  return jsonify({"error": "Missing 'distance_km' or 'stop_ids'"}), 400
 
+        # [DEMO FIX] Force prediction time to Monday 10:00 AM
+        # This ensures meaningful passenger numbers during off-hours demo/testing
+        # now = datetime.datetime.now()
+        # hour = now.hour
+        # day_of_week = now.weekday()
+        
+        hour = 10         # 10 AM
+        day_of_week = 0   # Monday
+        is_peak = 1       # 10 AM is peak
+        
+        # is_peak logic (redundant due to override, but kept for reference)
+        # is_peak = 1 if (8 <= hour <= 10) or (17 <= hour <= 19) else 0
+        
+        # Still need 'now' for response formatting
         now = datetime.datetime.now()
-        hour = now.hour
-        day_of_week = now.weekday()
-        is_peak = 1 if (8 <= hour <= 10) or (17 <= hour <= 19) else 0
+        
         is_weekend = 1 if day_of_week >= 5 else 0
 
         unique_stop_ids = list(set(stop_ids))
@@ -253,6 +275,11 @@ def predict():
                     if s_pass >= 15:
                         h_stops.append({'name': s_name, 'category': cat, 'multiplier': 1.0})
             
+            # [DEBUG] Log predictions
+            print(f"[DEBUG] Stop IDs: {current_stop_ids}")
+            print(f"[DEBUG] Predictions: {stop_predictions}")
+            print(f"[DEBUG] Total Passengers: {total_pass}")
+
             total_pass = round(total_pass)
             # Load Factor capped at 1.0 (Full) or higher? Standard practice cap at 1.2 (standing)?
             # Keeping 1.0 for conservative fuel calc, but showing overflow is fine.

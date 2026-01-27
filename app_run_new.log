@@ -70,3 +70,71 @@ Press CTRL+C to quit
 [OK] Loaded 1013 bus stops from database (Primary).
  * Debugger is active!
  * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\populate_db_from_json.py', reloading
+ * Restarting with stat
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator DecisionTreeRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator RandomForestRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 1010 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\populate_db_from_json.py', reloading
+ * Restarting with stat
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator DecisionTreeRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator RandomForestRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 1010 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\app.py', reloading
+ * Restarting with stat
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator DecisionTreeRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator RandomForestRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[DEBUG] DB URL: postgresql://neondb_owner:npg_0R7oaXzqeYQK@ep-long-breeze-a1vczx8s.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+[WARN] DB load failed, falling back to JSON: name 'get_db_connection' is not defined
+[OK] Loaded 2007 bus stops from JSON (Fallback).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569
+ * Detected change in 'b:\\Downloads\\ksrtc-hyro-project-main\\ksrtc-hyro-project-main\\src\\app.py', reloading
+ * Restarting with stat
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator DecisionTreeRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+C:\Users\abhay\AppData\Local\Programs\Python\Python313\Lib\site-packages\sklearn\base.py:463: InconsistentVersionWarning: Trying to unpickle estimator RandomForestRegressor from version 1.7.2 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:
+https://scikit-learn.org/stable/model_persistence.html#security-maintainability-limitations
+  warnings.warn(
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[DEBUG] DB URL: postgresql://neondb_owner:npg_0R7oaXzqeYQK@ep-long-breeze-a1vczx8s.ap-southeast-1.aws.neon.tech/neondb?sslmode=require
+[DEBUG] Raw DB Count: 2007
+[OK] Loaded 2007 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569

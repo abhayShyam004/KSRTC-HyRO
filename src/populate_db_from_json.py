@@ -61,7 +61,7 @@ DEFAULT_STOPS = [
 ]
 
 def populate_db():
-    print("--- Starting Database Population from JSON (Scaled Down + Districts + Restore Defaults) ---")
+    print("--- Starting Database Population from JSON (All Stops + Districts + Restore Defaults) ---")
     
     # Define paths
     base_dir = os.path.dirname(os.path.abspath(__file__))
@@ -69,7 +69,7 @@ def populate_db():
     json_path = os.path.join(project_root, 'bus_stops.json')
     
     if not os.path.exists(json_path):
-        print(f"❌ Error: JSON file not found at {json_path}")
+        print(f"[ERROR] JSON file not found at {json_path}")
         return
 
     try:
@@ -81,11 +81,7 @@ def populate_db():
         total_stops = len(stops_data)
         print(f"Loaded {total_stops} stops from JSON.")
         
-        # Scale down to 1000 random stops IF we have more than that
-        target_count = 1000
-        if total_stops > target_count:
-            print(f"Scaling down: Selecting {target_count} random stops from {total_stops}...")
-            stops_data = random.sample(stops_data, target_count)
+        # NOTE: WE DO NOT SCALE DOWN HERE. WE LOAD ALL STOPS.
             
         # ALWAYS Restore original default stops to the list
         print("Restoring original default stops to the list...")
@@ -132,7 +128,7 @@ def populate_db():
         print(f"Overwriting {json_path} with the final list (including defaults & districts)...")
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(stops_data, f, indent=2)
-        print("✅ bus_stops.json updated.")
+        print("[OK] bus_stops.json updated.")
             
         print("Connecting to database...")
         with get_db_connection() as conn:
@@ -144,10 +140,10 @@ def populate_db():
                     cur.execute("ALTER TABLE route_history ALTER COLUMN stop_ids TYPE BIGINT[];")
                     cur.execute("ALTER TABLE demand_history ALTER COLUMN stop_id TYPE BIGINT;")
                     conn.commit()
-                    print("✅ Schema updated to support BIGINT IDs.")
+                    print("[OK] Schema updated to support BIGINT IDs.")
                 except Exception as e:
                     conn.rollback()
-                    print(f"⚠️ Schema update skipped or failed (might already be BIGINT): {e}")
+                    print(f"[WARN] Schema update skipped or failed (might already be BIGINT): {e}")
 
                 # Clear ALL data to ensure clean state with defaults
                 print("Clearing ALL previous data to restore defaults + random stops...")
@@ -179,15 +175,15 @@ def populate_db():
                 )
                 
                 conn.commit()
-                print(f"✅ Successfully inserted/updated {len(values)} records in the database.")
+                print(f"[OK] Successfully inserted/updated {len(values)} records in the database.")
                 
                 # Verify count
                 cur.execute("SELECT COUNT(*) FROM bus_stops")
                 count = cur.fetchone()[0]
-                print(f"📊 Total stops in database now: {count}")
+                print(f"[INFO] Total stops in database now: {count}")
 
     except Exception as e:
-        print(f"❌ An error occurred: {e}")
+        print(f"[ERROR] An error occurred: {e}")
 
 if __name__ == "__main__":
     populate_db()

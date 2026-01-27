@@ -25,9 +25,9 @@ def main():
     print("🚀 Starting KSRTC-HyRO Build & Bootstrap Process")
     
     # 1. Sync DB from JSON (ensure we have stops)
-    print("[1/3] Preparing Database...")
-    module_populate = os.path.join(PROJECT_ROOT, 'src', 'populate_db_from_json.py')
-    run_python_module(module_populate, "Populating Database from JSON")
+    # print("[1/3] Preparing Database...")
+    # module_populate = os.path.join(PROJECT_ROOT, 'src', 'populate_db_from_json.py')
+    # run_python_module(module_populate, "Populating Database from JSON")
     
     # 2. Generate Dummy Historical Data
     # Training needs statistical history. Fresh DBs are empty.
