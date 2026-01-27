@@ -1,0 +1,22 @@
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 2004 bus stops from database (Primary).
+ * Serving Flask app 'app'
+ * Debug mode: on
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5001
+ * Running on http://192.168.31.122:5001
+Press CTRL+C to quit
+ * Restarting with stat
+[OK] Database tables initialized successfully.
+[OK] Database connected and initialized.
+[OK] Authentication routes registered.
+[OK] Passenger demand model loaded successfully.
+[MODEL] Version: 1.0 | SHA256: 12319cca...
+[OK] Loaded 2004 bus stops from database (Primary).
+ * Debugger is active!
+ * Debugger PIN: 572-280-569

@@ -53,10 +53,34 @@ MODEL_PATH = os.path.join(PROJECT_ROOT, 'models', 'passenger_demand_model.pkl')
 BUS_STOPS_PATH = os.path.join(PROJECT_ROOT, 'bus_stops.json')
 STATIC_FOLDER = PROJECT_ROOT  # Serve HTML from project root
 
-AVG_BUS_MILEAGE_KMPL = 4.5  # Base mileage for empty bus
-MIN_BUS_MILEAGE_KMPL = 3.5  # Mileage when fully loaded
-BUS_CAPACITY = 55  # Standard KSRTC bus capacity
-DIESEL_PRICE_PER_LITRE = 95.21  # Current price in Kerala
+# Default Configuration (Fallbacks if DB settings missing)
+AVG_BUS_MILEAGE_KMPL = 4.5
+MIN_BUS_MILEAGE_KMPL = 3.5
+BUS_CAPACITY = 55
+DIESEL_PRICE_PER_LITRE = 95.21
+
+def get_current_settings():
+    """Fetch current technical settings from DB or use defaults"""
+    defaults = {
+        'empty_mileage': AVG_BUS_MILEAGE_KMPL,
+        'full_mileage': MIN_BUS_MILEAGE_KMPL,
+        'bus_capacity': BUS_CAPACITY,
+        'diesel_price': DIESEL_PRICE_PER_LITRE
+    }
+    
+    if DB_AVAILABLE:
+        try:
+            db_settings = get_all_settings()
+            return {
+                'empty_mileage': float(db_settings.get('empty_mileage', defaults['empty_mileage'])),
+                'full_mileage': float(db_settings.get('full_mileage', defaults['full_mileage'])),
+                'bus_capacity': int(db_settings.get('bus_capacity', defaults['bus_capacity'])),
+                'diesel_price': float(db_settings.get('diesel_price', defaults['diesel_price']))
+            }
+        except Exception as e:
+            print(f"[WARN] Failed to fetch settings: {e}")
+            return defaults
+    return defaults
 
 # --- INITIALIZATION ---
 app = Flask(__name__, static_folder=STATIC_FOLDER)
@@ -78,13 +102,27 @@ if AUTH_AVAILABLE:
     print("[OK] Authentication routes registered.")
 
 # Load the trained model
+# Load the trained model (Strict Mode)
 try:
+    if not os.path.exists(MODEL_PATH):
+        raise FileNotFoundError(f"Model file missing at {MODEL_PATH}")
+        
     model = joblib.load(MODEL_PATH)
-    print("[OK] Passenger demand model loaded successfully.")
-except FileNotFoundError:
-    print(f"[ERROR] Model not found at {MODEL_PATH}")
-    print("Please run 'python src/train_demand_model.py' first.")
-    model = None
+    print(f"[OK] Passenger demand model loaded successfully.")
+    
+    # Log metadata if available
+    metadata_path = os.path.join(PROJECT_ROOT, 'models', 'model_metadata.json')
+    if os.path.exists(metadata_path):
+        with open(metadata_path, 'r') as f:
+            meta = json.load(f)
+            print(f"[MODEL] Version: {meta.get('version', 'unknown')} | SHA256: {meta.get('sha256', 'unknown')[:8]}...")
+            
+except Exception as e:
+    print(f"[CRITICAL] Failed to load model: {e}")
+    # In production, we want to fail fast.
+    # Note: On local dev, you might want to suppress this, but per production rules:
+    print("Application cannot start without prediction model.")
+    sys.exit(1)
 
 # Load bus stops (from DB or JSON fallback)
 bus_stops_data = {}
@@ -132,193 +170,165 @@ def serve_stops_json():
 
 @app.route('/predict', methods=['POST'])
 def predict():
-    if model is None:
-        return jsonify({"error": "Model not loaded"}), 500
+    import traceback
+    try:
+        if model is None:
+            print("[ERROR] Predict called but model is None")
+            return jsonify({"error": "Model not loaded"}), 500
 
-    data = request.get_json()
-    distance_km = data.get('distance_km')
-    num_stops = data.get('num_stops')
-    stop_ids = data.get('stop_ids', [])
-    
-    # 1. Calculate Stats for ORIGINAL Route
-    # -------------------------------------
-    if not distance_km or not num_stops:
-        # If distance not provided (e.g. optimizing pure list), we might need to approx it?
-        # For now, assume frontend provides distance for the CURRENT route
-        if not stop_ids:
-             return jsonify({"error": "Missing 'distance_km' or 'stop_ids'"}), 400
-
-    # ... (Time features calculation same as before) ...
-    now = datetime.datetime.now()
-    hour = now.hour
-    day_of_week = now.weekday()
-    is_peak = 1 if (8 <= hour <= 10) or (17 <= hour <= 19) else 0
-    is_weekend = 1 if day_of_week >= 5 else 0
-
-    # Create batch of features for all requested stops
-    # This allows the model to predict specific demand for EACH stop (V2 Model)
-    unique_stop_ids = list(set(stop_ids))
-    if unique_stop_ids:
-        X_pred = pd.DataFrame([{
-            'stop_id': s_id,
-            'hour_of_day': hour,
-            'day_of_week': day_of_week,
-            'is_peak': is_peak
-        } for s_id in unique_stop_ids])
+        data = request.get_json()
+        print(f"[DEBUG] Predict request data: {data}")
         
-        try:
-            # Model output: Array of counts corresponding to X_pred rows
-            preds = model.predict(X_pred)
-            # Map stop_id -> predicted_count
-            stop_predictions = dict(zip(unique_stop_ids, preds))
-        except Exception as e:
-            print(f"[WARN] Model prediction failed (might be V1 model?): {e}")
-            # Fallback to V1 logic if model is old or fails
+        distance_km = data.get('distance_km')
+        num_stops = data.get('num_stops')
+        stop_ids = data.get('stop_ids', [])
+        
+        # 1. Calculate Stats for ORIGINAL Route
+        # -------------------------------------
+        if not distance_km or not num_stops:
+            if not stop_ids:
+                 return jsonify({"error": "Missing 'distance_km' or 'stop_ids'"}), 400
+
+        now = datetime.datetime.now()
+        hour = now.hour
+        day_of_week = now.weekday()
+        is_peak = 1 if (8 <= hour <= 10) or (17 <= hour <= 19) else 0
+        is_weekend = 1 if day_of_week >= 5 else 0
+
+        unique_stop_ids = list(set(stop_ids))
+        if unique_stop_ids:
+            X_pred = pd.DataFrame([{
+                'stop_id': s_id,
+                'hour_of_day': hour,
+                'day_of_week': day_of_week,
+                'is_peak': is_peak
+            } for s_id in unique_stop_ids])
+            
             try:
-                base_pred = model.predict(pd.DataFrame([{
-                    'hour_of_day': hour, 
-                    'day_of_week': day_of_week, 
-                    'is_peak': is_peak
-                }]))[0]
-                stop_predictions = {sid: base_pred * float(bus_stops_data.get(sid, {}).get('demand_multiplier', 1.0)) for sid in unique_stop_ids}
-            except:
-                stop_predictions = {sid: 5 for sid in unique_stop_ids} # Ultimate fallback
-    else:
-        stop_predictions = {}
-    
-    # Debug print
-    # print(f"[DEBUG] Predictions: {stop_predictions}")
-
-    def calculate_stats(current_stop_ids, dist_km):
-        total_pass = 0
-        h_stops = []
-        if current_stop_ids:
-            for s_id in current_stop_ids:
-                s_info = bus_stops_data.get(s_id, {})
-                cat = s_info.get('category', 'regular')
-                s_name = s_info.get('name', f'Stop {s_id}')
-                
-                # V2: Get direct prediction from model
-                # If stop not in predictions (shouldn't happen), default to 0
-                s_pass = stop_predictions.get(s_id, 0)
-                
-                # Minimal sanity check - don't predict negative
-                s_pass = max(0, s_pass)
-                
-                total_pass += s_pass
-                
-                # Heuristic for "High Demand" labeling (e.g. > 15 people)
-                if s_pass >= 15:
-                    h_stops.append({'name': s_name, 'category': cat, 'multiplier': 1.0}) # Mult not used for display anymore
+                preds = model.predict(X_pred)
+                stop_predictions = dict(zip(unique_stop_ids, preds))
+            except Exception as e:
+                print(f"[WARN] Model prediction failed: {e}")
+                # Fallback
+                try:
+                    # Check if it's the ColumnTransformer mismatch
+                    X_v1 = pd.DataFrame([{
+                        'hour_of_day': hour, 
+                        'day_of_week': day_of_week, 
+                        'is_peak': is_peak
+                    }])
+                    base_pred = model.predict(X_v1)[0]
+                    stop_predictions = {sid: base_pred * float(bus_stops_data.get(sid, {}).get('demand_multiplier', 1.0)) for sid in unique_stop_ids}
+                except Exception as e2:
+                    print(f"[ERROR] V1 Fallback also failed: {e2}")
+                    stop_predictions = {sid: 5 for sid in unique_stop_ids}
         else:
-            # Fallback if no specific stops provided
-            total_pass = 0 
-            
-        total_pass = round(total_pass)
-        l_factor = min(1.0, total_pass / BUS_CAPACITY)
-        # Prevent division by zero if dist is 0
-        if dist_km > 0:
-            adj_mileage = AVG_BUS_MILEAGE_KMPL - (l_factor * (AVG_BUS_MILEAGE_KMPL - MIN_BUS_MILEAGE_KMPL))
-            f_cost = round((dist_km / adj_mileage) * DIESEL_PRICE_PER_LITRE)
-            mileage = adj_mileage
-        else:
-            f_cost = 0
-            mileage = AVG_BUS_MILEAGE_KMPL
-            
-        return total_pass, f_cost, l_factor, mileage, h_stops
-
-    # Original Stats
-    orig_pass, orig_cost, orig_load, orig_mileage, orig_high_stops = calculate_stats(stop_ids, distance_km or 0)
-
-    # 2. GENERATE OPTIMIZED ROUTE
-    # ---------------------------
-    optimized_result = None
-    if ROUTE_ML_AVAILABLE and stop_ids and len(stop_ids) > 2:
-        try:
-            # Reconstruct stop objects for the optimizer
-            current_stops_objs = [bus_stops_data.get(sid) for sid in stop_ids if sid in bus_stops_data]
-            
-            # Run Greedy Optimizer
-            # Pass ALL stops for enrichment (avoiding DB call in the module)
-            all_stops_cache = list(bus_stops_data.values())
-            opt_stops, opt_metrics = optimize_route_order(current_stops_objs, all_stops_cache)
-            
-            # Extract new ID order
-            opt_stop_ids = [s['bus_stop_id'] for s in opt_stops]
-            
-            # Check if order actually changed
-            if opt_stop_ids != stop_ids:
-                # Calculate Haversine Distance for ORIGINAL sequence to get a calibration factor
-                from math import radians, cos, sin, asin, sqrt
-                
-                def haversine(lon1, lat1, lon2, lat2):
-                    lon1, lat1, lon2, lat2 = map(radians, [lon1, lat1, lon2, lat2])
-                    dlon = lon2 - lon1
-                    dlat = lat2 - lat1
-                    a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
-                    c = 2 * asin(sqrt(a))
-                    return 6371 * c # Radius of earth in km
-
-                def calculate_path_length(stops_sequence):
-                    total_dist = 0
-                    for i in range(len(stops_sequence)-1):
-                        s1, s2 = stops_sequence[i], stops_sequence[i+1]
-                        total_dist += haversine(s1['lon'], s1['lat'], s2['lon'], s2['lat'])
-                    return total_dist
-
-                # Calculate original haversine (flight) distance
-                orig_stops_objs = [bus_stops_data.get(sid) for sid in stop_ids if sid in bus_stops_data]
-                orig_haversine = calculate_path_length(orig_stops_objs)
-                
-                # Calculate new haversine (flight) distance from the optimizer result (or verify it)
-                # opt_metrics['distance_km'] should be this, but let's recalculate to be consistent
-                new_haversine = calculate_path_length(opt_stops)
-                
-                # Calculate the "Road Factor" from the original provided OSRM distance
-                # Factor = Real OSRM / Flight Dist
-                # If orig_haversine is 0 (single stop), factor is 1
-                road_factor = (distance_km / orig_haversine) if orig_haversine > 0 else 1.2
-                
-                # Apply this specific road factor to the NEW haversine distance
-                # This assumes the "windingness" of roads is similar for the new route
-                est_opt_distance_km = new_haversine * road_factor
-                
-                # Re-calculate ML stats for this new sequence
-                opt_pass, opt_cost, opt_load, opt_mileage, opt_high = calculate_stats(opt_stop_ids, est_opt_distance_km)
-                
-                optimized_result = {
-                    'stop_ids': opt_stop_ids,
-                    'stop_names': [s['name'] for s in opt_stops],
-                    'estimated_distance_km': round(est_opt_distance_km, 2),
-                    'expected_passengers': int(opt_pass),
-                    'estimated_fuel_cost_inr': int(opt_cost),
-                    'savings_inr': int(orig_cost - opt_cost)
-                }
-        except Exception as e:
-            print(f"[WARN] Optimization step failed: {e}")
-
-    # Log to analytics (Original Route)
-    if DB_AVAILABLE:
-        try:
-            log_route_optimization(stop_ids, distance_km or 0, int((distance_km or 0) / 0.5), orig_pass, orig_cost)
-        except Exception as e:
-            print(f"[WARN] Failed to log analytics: {e}")
-
-    return jsonify({
-        # Original (Current) Stats
-        'expected_passengers': int(orig_pass),
-        'estimated_fuel_cost_inr': int(orig_cost),
-        'load_factor_percent': round(orig_load * 100),
-        'adjusted_mileage_kmpl': round(orig_mileage, 2),
-        'high_demand_stops': orig_high_stops,
+            stop_predictions = {}
         
-        # Meta
-        'calculation_time': now.strftime('%H:%M'),
-        'is_peak_hour': bool(is_peak),
-        
-        # New: Optimized Alternative
-        'optimized_route': optimized_result
-    })
+        # Fetch dynamic settings for this calculation
+        settings = get_current_settings()
+        sim_capacity = settings['bus_capacity']
+        sim_empty_mileage = settings['empty_mileage']
+        sim_full_mileage = settings['full_mileage']
+        sim_diesel_price = settings['diesel_price']
+
+        def calculate_stats(current_stop_ids, dist_km):
+            total_pass = 0
+            h_stops = []
+            if current_stop_ids:
+                for s_id in current_stop_ids:
+                    s_info = bus_stops_data.get(s_id, {})
+                    cat = s_info.get('category', 'regular')
+                    s_name = s_info.get('name', f'Stop {s_id}')
+                    s_pass = stop_predictions.get(s_id, 0)
+                    s_pass = max(0, float(s_pass))
+                    total_pass += s_pass
+                    if s_pass >= 15:
+                        h_stops.append({'name': s_name, 'category': cat, 'multiplier': 1.0})
+            
+            total_pass = round(total_pass)
+            # Load Factor capped at 1.0 (Full) or higher? Standard practice cap at 1.2 (standing)?
+            # Keeping 1.0 for conservative fuel calc, but showing overflow is fine.
+            l_factor = min(1.0, total_pass / sim_capacity)
+            
+            if dist_km > 0:
+                adj_mileage = sim_empty_mileage - (l_factor * (sim_empty_mileage - sim_full_mileage))
+                f_cost = round((dist_km / adj_mileage) * sim_diesel_price)
+                mileage = adj_mileage
+            else:
+                f_cost = 0
+                mileage = sim_empty_mileage
+                
+            return total_pass, f_cost, l_factor, mileage, h_stops
+
+        orig_pass, orig_cost, orig_load, orig_mileage, orig_high_stops = calculate_stats(stop_ids, distance_km or 0)
+
+        optimized_result = None
+        if ROUTE_ML_AVAILABLE and stop_ids and len(stop_ids) > 2:
+            try:
+                current_stops_objs = [bus_stops_data.get(sid) for sid in stop_ids if sid in bus_stops_data]
+                all_stops_cache = list(bus_stops_data.values())
+                opt_stops, opt_metrics = optimize_route_order(current_stops_objs, all_stops_cache)
+                opt_stop_ids = [s['bus_stop_id'] for s in opt_stops]
+                
+                if opt_stop_ids != stop_ids:
+                    from math import radians, cos, sin, asin, sqrt
+                    def haversine(lon1, lat1, lon2, lat2):
+                        lon1, lat1, lon2, lat2 = map(radians, [float(lon1), float(lat1), float(lon2), float(lat2)])
+                        dlon = lon2 - lon1
+                        dlat = lat2 - lat1
+                        a = sin(dlat/2)**2 + cos(lat1) * cos(lat2) * sin(dlon/2)**2
+                        c = 2 * asin(sqrt(a))
+                        return 6371 * c
+                    
+                    def calculate_path_length(stops_sequence):
+                        dist = 0
+                        for i in range(len(stops_sequence)-1):
+                            s1, s2 = stops_sequence[i], stops_sequence[i+1]
+                            dist += haversine(s1['lon'], s1['lat'], s2['lon'], s2['lat'])
+                        return dist
+
+                    orig_haversine = calculate_path_length(current_stops_objs)
+                    new_haversine = calculate_path_length(opt_stops)
+                    road_factor = (distance_km / orig_haversine) if orig_haversine > 0 else 1.2
+                    est_opt_distance_km = new_haversine * road_factor
+                    
+                    opt_pass, opt_cost, opt_load, opt_mileage, opt_high = calculate_stats(opt_stop_ids, est_opt_distance_km)
+                    
+                    optimized_result = {
+                        'stop_ids': opt_stop_ids,
+                        'stop_names': [s['name'] for s in opt_stops],
+                        'estimated_distance_km': round(est_opt_distance_km, 2),
+                        'expected_passengers': int(opt_pass),
+                        'estimated_fuel_cost_inr': int(opt_cost),
+                        'savings_inr': int(orig_cost - opt_cost)
+                    }
+            except Exception as e:
+                print(f"[WARN] Optimization step failed: {e}")
+                traceback.print_exc()
+
+        if DB_AVAILABLE:
+            try:
+                log_route_optimization(stop_ids, distance_km or 0, int((distance_km or 0) / 0.5), orig_pass, orig_cost)
+            except Exception as e:
+                print(f"[WARN] Failed to log analytics: {e}")
+
+        return jsonify({
+            'expected_passengers': int(orig_pass),
+            'estimated_fuel_cost_inr': int(orig_cost),
+            'load_factor_percent': round(orig_load * 100),
+            'adjusted_mileage_kmpl': round(orig_mileage, 2),
+            'high_demand_stops': orig_high_stops,
+            'calculation_time': now.strftime('%H:%M'),
+            'is_peak_hour': bool(is_peak),
+            'optimized_route': optimized_result
+        })
+    except Exception as e:
+        err_msg = f"INTERNAL ERROR: {str(e)}"
+        print(f"[CRITICAL] {err_msg}")
+        traceback.print_exc()
+        return jsonify({"error": err_msg, "traceback": traceback.format_exc()}), 500
+
 
 
 # ========== API: BUS STOPS ==========

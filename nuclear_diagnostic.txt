@@ -3,20 +3,20 @@
 1. FEATURE CARDINALITY (nunique):
 stop_id        1017
 hour_of_day      16
-day_of_week       4
+day_of_week       3
 is_peak           2
 
 2. PER-STOP SAMPLE STATS:
 count    1017.000000
-mean       29.986234
-std         2.507431
-min        22.000000
-25%        28.000000
-50%        30.000000
-75%        32.000000
-max        36.000000
+mean       27.587021
+std         2.344064
+min        19.000000
+25%        26.000000
+50%        28.000000
+75%        29.000000
+max        34.000000
 
 3. LINEAR SIGNAL CHECK (Simple Features Only):
-LinearRegression MAE: 9.50
-Baseline (Mean) MAE: 21.08
-LR/Baseline Ratio: 0.45 (If approx 1.0 -> No linear signal in time features)
+LinearRegression MAE: 9.82
+Baseline (Mean) MAE: 21.45
+LR/Baseline Ratio: 0.46 (If approx 1.0 -> No linear signal in time features)
