@@ -17885,8 +17885,8 @@
   {
     "bus_stop_id": 2007,
     "name": "Kannur International Airport (CNN)",
-    "lat": 11.9150933,
-    "lon": 75.5598316,
+    "lat": 11.916,
+    "lon": 75.568,
     "district": "Kannur",
     "category": "airport",
     "demand_multiplier": 5.0
@@ -17894,8 +17894,8 @@
   {
     "bus_stop_id": 7248,
     "name": "Calicut International Airport (CCJ)",
-    "lat": 11.1338,
-    "lon": 75.9553,
+    "lat": 11.139,
+    "lon": 75.952,
     "district": "Malappuram",
     "category": "airport",
     "demand_multiplier": 5.0

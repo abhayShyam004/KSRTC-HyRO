@@ -4,8 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>KSRTC-HyRO Control Center</title>
-    <link rel="icon" type="image/png" href="ksrtc logo.png">
-    <link rel="apple-touch-icon" href="ksrtc logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -27,8 +25,8 @@
         .awesomplete { width: 100%; position: relative; }
         .awesomplete > ul { border-radius: 0.5rem; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 0; margin-top: 4px; z-index: 9999 !important; position: absolute !important; }
         .awesomplete > ul > li { padding: 8px 12px; font-size: 0.9rem; color: #374151; }
-        .awesomplete > ul > li:hover, .awesomplete > ul > li[aria-selected="true"] { background: #fef2f2; color: #E72A01; }
-        .sortable-ghost { opacity: 0.4; border: 2px dashed #E72A01; background: #fef2f2; }
+        .awesomplete > ul > li:hover, .awesomplete > ul > li[aria-selected="true"] { background: #eff6ff; color: #1d4ed8; }
+        .sortable-ghost { opacity: 0.4; border: 2px dashed #3b82f6; background: #eff6ff; }
         .drag-handle { cursor: grab; }
         .drag-handle:active { cursor: grabbing; }
         
@@ -154,53 +152,9 @@
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
-        @keyframes breathe {
-            0%, 100% { transform: scale(1); opacity: 1; filter: brightness(100%); }
-            50% { transform: scale(1.03); opacity: 0.9; filter: brightness(110%); }
-        }
-        .animate-breathe {
-            animation: breathe 2s ease-in-out infinite;
-        }
         .animate-spin {
             animation: spin 1s linear infinite;
             display: inline-block;
-        }
-        /* Bus Progress Animation */
-        .bus-track {
-            width: 80vw;
-            max-width: 320px;
-            height: 6px;
-            background: transparent; /* Track removed */
-            border-radius: 99px;
-            position: relative;
-            margin-top: 60px;
-            margin-bottom: 24px;
-        }
-        .bus-icon {
-            position: absolute;
-            top: -50px;
-            left: 0;
-            height: 120px; /* Bigger Mobile */
-            width: auto;
-            transform: translateX(-50%) scaleX(-1);
-            transition: left 0.2s linear;
-            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
-            z-index: 10;
-        }
-        
-        /* Desktop size increase */
-        @media (min-width: 768px) {
-            .bus-track {
-                max-width: 700px;
-                height: 8px; 
-                margin-top: 140px; /* More space for big bus */
-                background: transparent;
-            }
-            .bus-icon {
-                height: 280px; /* Massive Desktop */
-                top: -180px; /* Adjust offset for height */
-                filter: drop-shadow(0 10px 20px rgba(0,0,0,0.2));
-            }
         }
         .district-accordion-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
         .district-accordion-content.expanded { max-height: none; }
@@ -208,18 +162,16 @@
         .district-header:hover { background-color: #f1f5f9; }
         .district-header .toggle-icon { transition: transform 0.2s; }
         .district-header.expanded .toggle-icon { transform: rotate(180deg); }
-</style>
+    </style>
 </head>
-<body class="h-screen flex flex-col overflow-hidden text-gray-800 relative">
-    <!-- KSRTC Brand Bar -->
-    <div class="h-1 bg-gradient-to-r from-[#E72A01] via-[#ff4d2e] to-[#E72A01] w-full flex-shrink-0 md:hidden"></div>
-    <div class="flex-1 flex overflow-hidden">
+<body class="h-screen flex overflow-hidden text-gray-800 relative">
+
     <!-- ========== MOBILE TOP BAR ========== -->
     <div class="mobile-top-bar">
         <div class="mobile-search-container">
             <i class="ph ph-magnifying-glass text-gray-400 text-lg mr-3"></i>
             <input id="mobileStopSearch" class="flex-1 bg-transparent border-none focus:outline-none text-sm text-gray-800 placeholder-gray-400" placeholder="Search stop (e.g. Aluva)...">
-            <button id="mobileAddStopBtn" class="p-2 text-[#E72A01] font-medium text-sm">Add</button>
+            <button id="mobileAddStopBtn" class="p-2 text-blue-600 font-medium text-sm">Add</button>
         </div>
         <a href="/admin.html" class="mobile-menu-btn">
             <i class="ph ph-gear-six text-xl"></i>
@@ -240,13 +192,10 @@
                     <p id="mobileStopCount" class="text-sm text-gray-500">0 Stops added</p>
                 </div>
                 <div class="flex items-center gap-2" onclick="event.stopPropagation()">
-                    <button id="mobileResetRouteBtn" class="bg-gray-100 text-gray-500 px-3 py-2 rounded-xl text-sm font-semibold flex items-center justify-center hover:bg-red-50 hover:text-red-500 transition">
-                        <i class="ph ph-arrow-counter-clockwise text-lg"></i>
-                    </button>
                     <button id="mobileToggleStopsBtn" onclick="toggleAllStops(); event.stopPropagation();" class="bg-gray-100 text-gray-700 px-3 py-2 rounded-xl text-sm font-semibold flex items-center gap-2">
                         <i class="ph ph-map-pin"></i> Show Stops
                     </button>
-                    <button id="mobileOptimizeBtn" class="bg-[#E72A01] text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-red-200 flex items-center gap-2">
+                    <button id="mobileOptimizeBtn" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-semibold shadow-lg shadow-blue-200 flex items-center gap-2">
                         <i class="ph ph-lightning"></i> Optimize
                     </button>
                 </div>
@@ -287,14 +236,14 @@
 
     <!-- ========== DESKTOP SIDEBAR (Hidden on Mobile) ========== -->
     <aside id="mainSidebar" class="sidebar-main w-96 bg-white shadow-xl z-20 flex flex-col border-r border-gray-200">
-        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-red-50 to-white">
+        <div class="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-slate-50">
             <div class="flex items-center space-x-3">
-                <div class="h-12 w-12 bg-white rounded-lg flex items-center justify-center shadow-lg border border-gray-100">
-                    <img src="ksrtc logo.png" alt="KSRTC" class="h-10 w-10 object-contain">
+                <div class="h-10 w-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-200">
+                    <i class="ph ph-bus text-white text-xl"></i>
                 </div>
                 <div>
                     <h1 class="text-xl font-bold text-gray-900 tracking-tight">KSRTC-HyRO</h1>
-                    <p class="text-xs text-[#E72A01] font-medium uppercase tracking-wider">Route Optimizer</p>
+                    <p class="text-xs text-blue-600 font-medium uppercase tracking-wider">Route Optimizer</p>
                 </div>
             </div>
             <a href="/admin.html" class="h-9 w-9 bg-slate-200 hover:bg-slate-300 rounded-lg flex items-center justify-center transition" title="Admin Panel">
@@ -306,7 +255,7 @@
             <div>
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Build Route</label>
                 <div class="relative">
-                    <input id="stopSearch" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:bg-white transition" placeholder="Search location (e.g. Aluva)..." disabled>
+                    <input id="stopSearch" class="w-full pl-10 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition" placeholder="Search location (e.g. Aluva)..." disabled>
                     <i class="ph ph-magnifying-glass absolute left-3.5 top-3.5 text-gray-400 text-lg"></i>
                 </div>
                 <button id="addStopBtn" class="mt-3 w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium text-sm rounded-lg transition duration-200 flex items-center justify-center gap-2" disabled>
@@ -317,7 +266,7 @@
             <div>
                 <div class="flex items-center justify-between mb-3">
                     <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide">Current Route Plan</label>
-                    <span id="stopCountBadge" class="px-2 py-0.5 bg-red-100 text-[#E72A01] text-xs font-bold rounded-full">0 Stops</span>
+                    <span id="stopCountBadge" class="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">0 Stops</span>
                 </div>
                 <ul id="routeList" class="space-y-2 min-h-[100px]">
                     <li class="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl">
@@ -329,14 +278,9 @@
         </div>
 
         <div class="p-6 border-t border-gray-100 bg-gray-50">
-             <div class="flex gap-2">
-                <button id="resetRouteBtn" class="w-16 py-3.5 bg-gray-200 hover:bg-gray-300 text-gray-600 font-bold rounded-xl transition duration-300 flex items-center justify-center transform active:scale-95" title="Clear Route">
-                    <i class="ph ph-arrow-counter-clockwise text-xl"></i>
-                </button>
-                 <button id="getRouteBtn" class="flex-1 py-3.5 bg-[#E72A01] hover:bg-[#8C0000] text-white font-bold rounded-xl shadow-lg shadow-red-200 transition duration-300 flex items-center justify-center gap-2 transform active:scale-95">
-                    <i class="ph ph-lightning text-xl"></i> Optimize Route
-                </button>
-            </div>
+             <button id="getRouteBtn" class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-lg shadow-blue-200 transition duration-300 flex items-center justify-center gap-2 transform active:scale-95">
+                <i class="ph ph-lightning text-xl"></i> Optimize Route
+            </button>
             <p id="statusMsg" class="text-xs text-center text-gray-400 mt-3 font-medium">Ready to calculate</p>
         </div>
     </aside>
@@ -345,14 +289,14 @@
         <div class="px-5 py-5 border-b border-gray-100 flex items-center justify-between bg-gray-50">
             <div>
                 <h3 class="font-bold text-gray-800">Network Stops</h3>
-                <p id="totalStopsCount" class="text-xs text-[#E72A01] font-medium">-- locations</p>
+                <p id="totalStopsCount" class="text-xs text-blue-600 font-medium">-- locations</p>
             </div>
             <button onclick="toggleAllStops()" class="w-8 h-8 rounded-full bg-white border border-gray-200 flex items-center justify-center text-gray-500 hover:text-red-500 hover:border-red-200 transition shadow-sm">
                 <i class="ph ph-x"></i>
             </button>
         </div>
         <div class="px-4 py-3 border-b border-gray-100">
-            <input id="sidebarSearch" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-red-500" placeholder="Filter list...">
+            <input id="sidebarSearch" class="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-500" placeholder="Filter list...">
         </div>
         <div class="flex-1 overflow-y-auto p-2 space-y-1" id="stopsList"></div>
     </aside>
@@ -364,9 +308,9 @@
             </button>
             
             <div id="metricsPanel" class="pointer-events-auto w-64 bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl border border-gray-100 overflow-hidden transform transition-all duration-500 translate-x-10 opacity-0 relative">
-                <div class="bg-[#E72A01] px-5 py-3 flex items-center justify-between">
+                <div class="bg-blue-600 px-5 py-3 flex items-center justify-between">
                     <span class="text-white font-bold text-sm flex items-center gap-2"><i class="ph ph-chart-line-up"></i> Trip Summary</span>
-                    <button onclick="closeMetrics()" class="text-red-200 hover:text-white transition"><i class="ph ph-x"></i></button>
+                    <button onclick="closeMetrics()" class="text-blue-200 hover:text-white transition"><i class="ph ph-x"></i></button>
                 </div>
                 <div class="p-2 space-y-1">
                     <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg transition">
@@ -393,25 +337,10 @@
     </main>
 
     <!-- LOADER OVERLAY -->
-    <div id="loadingOverlay" class="fixed inset-0 bg-white/95 backdrop-blur-md z-[9999] hidden flex flex-col items-center justify-center transition-all duration-300">
-        
-        <!-- MOBILE LOADER: Simple Spinner -->
-        <div class="flex flex-col items-center md:hidden">
-            <div class="h-16 w-16 border-4 border-red-200 border-t-[#E72A01] rounded-full animate-spin mb-4"></div>
-            <h3 class="text-xl font-bold text-gray-800 animate-pulse">Optimizing Route...</h3>
-        </div>
-
-        <!-- DESKTOP LOADER: Bus Animation -->
-        <div class="hidden md:flex flex-col items-center w-full">
-            <h3 class="text-2xl font-bold text-gray-800 tracking-tight">Optimizing Route...</h3>
-            <!-- Progress Track -->
-            <div class="bus-track">
-                <!-- No fill bar, just the bus moving -->
-                <img id="progressBus" src="custom_loader.png" alt="Bus" class="bus-icon" style="left: 0%">
-            </div>
-        </div>
-        
-        <p id="loadingStatus" class="text-sm text-gray-500 mt-2 font-medium">Calculating least-cost path...</p>
+    <div id="loadingOverlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-[9999] hidden flex flex-col items-center justify-center">
+        <div class="h-16 w-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+        <h3 class="text-xl font-bold text-gray-800 animate-pulse">Optimizing Route...</h3>
+        <p class="text-sm text-gray-500 mt-2">Calculating fastest path & fuel costs</p>
     </div>
 
     <!-- TOAST CONTAINER -->
@@ -456,29 +385,6 @@
         let awesomplete;
         let intermediateStopsLayer = null;
         let isLoadingStops = false; // Track loading state
-
-        // --- BEACH ROAD RESTRICTED ZONE (DISABLED in v9.3) ---
-        // Beach Road zone blocking has been disabled to allow all routes.
-        // Original zones can be restored from zones.backup.json if needed.
-        const BEACH_ROAD_ZONES = [
-            // DISABLED - All zones removed
-        ];
-
-        // Check if a stop is inside the Beach Road restricted zone
-        function isStopInBeachRoadZone(stop) {
-            if (!stop || !stop.lat || !stop.lon) return false;
-            const lat = parseFloat(stop.lat);
-            const lon = parseFloat(stop.lon);
-            
-            for (let zone of BEACH_ROAD_ZONES) {
-                if (lat >= zone.minLat && lat <= zone.maxLat && 
-                    lon >= zone.minLon && lon <= zone.maxLon) {
-                    console.warn(`[RESTRICTED] Stop "${stop.name}" is in ${zone.name} (${lat}, ${lon})`);
-                    return zone.name;
-                }
-            }
-            return false;
-        }
 
         // --- SEARCH OPTIMIZATION ---
         let searchTimeout = null;
@@ -568,79 +474,6 @@
             if(stop) {
                 currentRoute.splice(index, 1);
                 renderRouteList(); // Updates both
-                
-                // Safe Re-route
-                if (currentRoute.length >= 2) {
-                    handleGetRoute();
-                } else {
-                     if (routeLayer) map.removeLayer(routeLayer);
-                     if (intermediateStopsLayer) map.removeLayer(intermediateStopsLayer);
-                }
-            }
-        }
-
-        // Reset Route Logic
-        function resetRoute() {
-            if (currentRoute.length === 0) return;
-            if (!confirm("Are you sure you want to clear the entire route plan?")) return;
-            
-            // Clear Data
-            currentRoute = [];
-            
-            // Clear UI List
-            renderRouteList();
-            
-            // Clear Map Layers
-            if (routeLayer) { map.removeLayer(routeLayer); routeLayer = null; }
-            if (intermediateStopsLayer) { map.removeLayer(intermediateStopsLayer); intermediateStopsLayer = null; }
-            if (originalPolyline) { map.removeLayer(originalPolyline); originalPolyline = null; }
-            if (optimizedPolyline) { map.removeLayer(optimizedPolyline); optimizedPolyline = null; }
-
-            // Clear GeoJSON Data & Stats
-            originalRouteGeoJSON = null;
-            optimizedRouteGeoJSON = null;
-            
-            document.getElementById('valDuration').innerText = '-- min';
-            document.getElementById('valDistance').innerText = '-- km';
-            document.getElementById('valCost').innerText = '₹0';
-            updateMobileStats(0, 0, 0, 0);
-
-            // Reset Status
-            statusMsg.innerText = "Route plan cleared.";
-            showToast("Route plan cleared", "success");
-        }
-        
-        // --- PERSISTENCE ---
-        function saveRouteToLocalStorage() {
-            try {
-                const ids = currentRoute.map(s => s.bus_stop_id);
-                localStorage.setItem('ksrtc_saved_route', JSON.stringify(ids));
-            } catch (e) { console.warn("Save failed", e); }
-        }
-
-        function loadRouteFromLocalStorage() {
-            try {
-                const saved = localStorage.getItem('ksrtc_saved_route');
-                if (saved) {
-                    const ids = JSON.parse(saved);
-                    // Rehydrate from loaded busStops to ensure fresh data
-                    const restored = ids.map(id => busStops.find(s => s.bus_stop_id === id)).filter(s => s);
-                    
-                    if (restored.length > 0) {
-                        currentRoute = restored;
-                        renderRouteList();
-                        renderMarkers(currentRoute);
-                        
-                        // If we have a valid route, update UI state
-                        if(currentRoute.length >= 2) {
-                             statusMsg.textContent = "Route restored. Ready to optimize.";
-                        }
-                        console.log(`[PERSISTENCE] Restored ${currentRoute.length} stops.`);
-                        // Optional: Auto-optimize? User probably prefers explicit click.
-                    }
-                }
-            } catch (e) {
-                console.error("Load failed", e);
             }
         }
 
@@ -701,29 +534,12 @@
             }
         }
 
-        // Explicitly define sidebar add function to ensure it uses the main logic with checks
-        window.addStopToRouteFromSidebar = function(stopId) {
-            const stop = busStops.find(s => s.bus_stop_id === stopId);
-            if (stop) {
-                addStopToRoute(stop);
-            } else {
-                console.error("Stop not found from sidebar click:", stopId);
-            }
-        };
-
         document.addEventListener('DOMContentLoaded', async () => {
             initializeMap();
             await loadBusStops();
             setupDragAndDrop();
             addStopBtn.addEventListener('click', addStopToRoute);
             getRouteBtn.addEventListener('click', handleGetRoute);
-            
-            const resetBtn = document.getElementById('resetRouteBtn');
-            if (resetBtn) resetBtn.addEventListener('click', resetRoute);
-
-            const mobileReset = document.getElementById('mobileResetRouteBtn');
-            if (mobileReset) mobileReset.addEventListener('click', resetRoute);
-            
             routeListUl.addEventListener('click', handleRemoveStop);
             toggleStopsBtn.addEventListener('click', toggleAllStops);
             sidebarSearch.addEventListener('input', filterSidebarStops);
@@ -766,7 +582,7 @@
             toast.className = `transform transition-all duration-300 translate-y-10 opacity-0 px-4 py-3 rounded-lg shadow-lg border-l-4 flex items-center gap-3 min-w-[300px] pointer-events-auto backdrop-blur-md`;
             
             let icon = 'ph-info';
-            let colors = 'bg-white border-red-500 text-gray-800';
+            let colors = 'bg-white border-blue-500 text-gray-800';
             
             if (type === 'error') {
                 colors = 'bg-white border-red-500 text-gray-800';
@@ -826,9 +642,6 @@
                     renderStopsSidebarList(busStops);
                     refreshMapMarkers();
                 }
-                
-                // Restore saved route if available
-                loadRouteFromLocalStorage();
             } catch (error) {
                 console.warn('API error, falling back to JSON:', error);
                 
@@ -861,9 +674,6 @@
                         renderStopsSidebarList(busStops);
                         refreshMapMarkers();
                     }
-                    
-                    // Restore saved route if available
-                    loadRouteFromLocalStorage();
                 } catch (jsonError) {
                     console.error('Critical: Failed to load stops entirely:', jsonError);
                     showToast("Failed to load map data. Check console.", 'error');
@@ -982,7 +792,7 @@
                     // Desktop
                     if (toggleStopsBtn) {
                         toggleStopsBtn.innerHTML = '<i class="ph ph-eye-slash"></i> Hide Network Map';
-                        toggleStopsBtn.classList.add('bg-red-50', 'text-[#E72A01]', 'border-red-200');
+                        toggleStopsBtn.classList.add('bg-blue-50', 'text-blue-700', 'border-blue-200');
                     }
                     
                     // Sidebar Slide In (Force Style)
@@ -995,7 +805,7 @@
                     // Mobile
                     if (mobileBtn) {
                         mobileBtn.innerHTML = '<i class="ph ph-eye-slash"></i> Hide';
-                        mobileBtn.classList.add('bg-red-100', 'text-[#E72A01]');
+                        mobileBtn.classList.add('bg-blue-100', 'text-blue-700');
                         mobileBtn.classList.remove('bg-gray-100', 'text-gray-700');
                         
                         // HIDE Bottom Sheet completely to avoid overlap
@@ -1034,7 +844,7 @@
                     // Desktop
                     if (toggleStopsBtn) {
                         toggleStopsBtn.innerHTML = '<i class="ph ph-map-pin"></i> Show All Stops';
-                        toggleStopsBtn.classList.remove('bg-red-50', 'text-[#E72A01]', 'border-red-200');
+                        toggleStopsBtn.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
                     }
                     
                     // Sidebar Slide Out
@@ -1047,7 +857,7 @@
                     // Mobile
                     if (mobileBtn) {
                         mobileBtn.innerHTML = '<i class="ph ph-map-pin"></i> Show Stops';
-                        mobileBtn.classList.remove('bg-red-100', 'text-[#E72A01]');
+                        mobileBtn.classList.remove('bg-blue-100', 'text-blue-700');
                         mobileBtn.classList.add('bg-gray-100', 'text-gray-700');
                         
                         // RESTORE Bottom Sheet
@@ -1082,7 +892,7 @@
                  if (isLoadingStops) {
                      stopsList.innerHTML = `
                          <div class="p-12 text-center">
-                             <div class="inline-block animate-spin h-8 w-8 border-4 border-[#E72A01] border-t-transparent rounded-full mb-4"></div>
+                             <div class="inline-block animate-spin h-8 w-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
                              <p class="text-sm font-bold text-gray-700">Loading Network Data...</p>
                              <p class="text-xs text-gray-400 mt-1">Fetching bus stops from server</p>
                          </div>
@@ -1122,14 +932,14 @@
                  
                  // Accordion Wrapper
                 const wrapper = document.createElement('div');
-                wrapper.className = "mb-2 border border-red-50/50 rounded-xl overflow-hidden bg-white shadow-sm";
+                wrapper.className = "mb-2 border border-blue-50/50 rounded-xl overflow-hidden bg-white shadow-sm";
                 
                 // Header
                 const header = document.createElement('div');
                 header.className = `district-header flex items-center justify-between p-3.5 bg-gray-50/50 cursor-pointer hover:bg-gray-100 transition-colors ${isSearch ? 'expanded' : ''}`;
                 header.innerHTML = `
                     <div class="flex items-center gap-3">
-                        <div class="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-gray-400 shadow-sm transition-colors group-hover:text-[#E72A01]">
+                        <div class="w-8 h-8 rounded-lg bg-white border border-gray-100 flex items-center justify-center text-gray-400 shadow-sm transition-colors group-hover:text-blue-600">
                             <i class="ph ph-map-trifold text-lg"></i>
                         </div>
                         <div>
@@ -1159,19 +969,19 @@
                           // RENDER ON DEMAND
                           if (!isRendered) {
                               content.innerHTML = distStops.map((stop, idx) => `
-                                 <div class="px-3.5 py-3 border-t border-gray-50 hover:bg-red-50 transition-colors flex items-center justify-between group cursor-pointer" onclick="addStopToRouteFromSidebar(${stop.bus_stop_id})">
+                                 <div class="px-3.5 py-3 border-t border-gray-50 hover:bg-blue-50 transition-colors flex items-center justify-between group cursor-pointer" onclick="addStopToRouteFromSidebar(${stop.bus_stop_id})">
                                      <div class="flex items-center gap-3 overflow-hidden">
-                                         <div class="h-1.5 w-1.5 rounded-full ${stop.category === 'transport_hub' ? 'bg-red-500' : 'bg-gray-300'} flex-shrink-0"></div>
+                                         <div class="h-1.5 w-1.5 rounded-full ${stop.category === 'transport_hub' ? 'bg-blue-500' : 'bg-gray-300'} flex-shrink-0"></div>
                                          <div class="flex flex-col gap-0.5 overflow-hidden">
-                                             <span class="text-xs font-semibold text-gray-600 group-hover:text-[#E72A01] truncate">${stop.name}</span>
+                                             <span class="text-xs font-semibold text-gray-600 group-hover:text-blue-700 truncate">${stop.name}</span>
                                              <div class="flex flex-wrap gap-1">
                                                  ${getStopBadge(stop)}
                                              </div>
                                          </div>
                                      </div>
                                      <div class="flex items-center gap-2 flex-shrink-0">
-                                         <i class="ph ph-magnifying-glass text-gray-300 hover:text-[#E72A01] transition-colors" title="Locate on map"></i>
-                                         <i class="ph ph-plus-circle text-gray-300 group-hover:text-[#E72A01] transition-colors"></i>
+                                         <i class="ph ph-magnifying-glass text-gray-300 hover:text-blue-600 transition-colors" title="Locate on map"></i>
+                                         <i class="ph ph-plus-circle text-gray-300 group-hover:text-blue-600 transition-colors"></i>
                                      </div>
                                  </div>
                               `).join('');
@@ -1188,19 +998,19 @@
                  // If strictly searching, pre-fill content
                  if (isSearch) {
                      content.innerHTML = distStops.map((stop, idx) => `
-                        <div class="px-3.5 py-3 border-t border-gray-50 hover:bg-red-50 transition-colors flex items-center justify-between group cursor-pointer" onclick="addStopToRouteFromSidebar(${stop.bus_stop_id})">
+                        <div class="px-3.5 py-3 border-t border-gray-50 hover:bg-blue-50 transition-colors flex items-center justify-between group cursor-pointer" onclick="addStopToRouteFromSidebar(${stop.bus_stop_id})">
                             <div class="flex items-center gap-3 overflow-hidden">
-                                <div class="h-1.5 w-1.5 rounded-full ${stop.category === 'transport_hub' ? 'bg-red-500' : 'bg-gray-300'} flex-shrink-0"></div>
+                                <div class="h-1.5 w-1.5 rounded-full ${stop.category === 'transport_hub' ? 'bg-blue-500' : 'bg-gray-300'} flex-shrink-0"></div>
                                 <div class="flex flex-col gap-0.5 overflow-hidden">
-                                    <span class="text-xs font-semibold text-gray-600 group-hover:text-[#E72A01] truncate">${stop.name}</span>
+                                    <span class="text-xs font-semibold text-gray-600 group-hover:text-blue-700 truncate">${stop.name}</span>
                                     <div class="flex flex-wrap gap-1">
                                         ${getStopBadge(stop)}
                                     </div>
                                 </div>
                             </div>
                             <div class="flex items-center gap-2 flex-shrink-0">
-                                <i class="ph ph-magnifying-glass text-gray-300 hover:text-[#E72A01] transition-colors" title="Locate on map"></i>
-                                <i class="ph ph-plus-circle text-gray-300 group-hover:text-[#E72A01] transition-colors"></i>
+                                <i class="ph ph-magnifying-glass text-gray-300 hover:text-blue-600 transition-colors" title="Locate on map"></i>
+                                <i class="ph ph-plus-circle text-gray-300 group-hover:text-blue-600 transition-colors"></i>
                             </div>
                         </div>
                      `).join('');
@@ -1262,15 +1072,7 @@
             // Validation
             if (!stop) { showToast("Stop not found. Please select from the list.", 'error'); return; }
             if (currentRoute.find(r => r.bus_stop_id === stop.bus_stop_id)) {
-                showToast("This stop is already in your route.", 'error'); return;
-            }
-            
-            // CRITICAL: Block stops in Beach Road restricted zone
-            const restrictedZone = isStopInBeachRoadZone(stop);
-            if (restrictedZone) {
-                showToast(`⚠️ "${stop.name}" is in ${restrictedZone} - RESTRICTED AREA. Cannot add to route.`, 'error');
-                console.error(`[BLOCKED] Attempted to add restricted stop: ${stop.name} in ${restrictedZone}`);
-                return;
+                showToast("This stop is already in your route.", 'error'); return; // Toast exists now
             }
 
             currentRoute.push(stop);
@@ -1287,7 +1089,7 @@
                 areAllStopsVisible = false;
                 if (toggleStopsBtn) {
                     toggleStopsBtn.innerHTML = '<i class="ph ph-map-pin"></i> Show All Stops';
-                    toggleStopsBtn.classList.remove('bg-red-50', 'text-[#E72A01]', 'border-red-200');
+                    toggleStopsBtn.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
                 }
             }
 
@@ -1305,15 +1107,6 @@
                 const stopId = parseInt(removeButton.dataset.id);
                 currentRoute = currentRoute.filter(s => s.bus_stop_id !== stopId);
                 renderRouteList();
-                
-                // Safe Re-route
-                if (currentRoute.length >= 2) {
-                    handleGetRoute();
-                } else {
-                    if (routeLayer) map.removeLayer(routeLayer);
-                    if (intermediateStopsLayer) map.removeLayer(intermediateStopsLayer);
-                    statusMsg.textContent = "Add at least 2 stops";
-                }
             }
         }
 
@@ -1327,8 +1120,8 @@
 
             if (currentRoute.length === 0) {
                 addStopBtn.innerHTML = '<i class="ph ph-map-pin text-lg"></i> Set Departure Point';
-                addStopBtn.classList.replace('text-gray-700', 'text-[#E72A01]');
-                addStopBtn.classList.replace('bg-gray-100', 'bg-red-50');
+                addStopBtn.classList.replace('text-gray-700', 'text-blue-700');
+                addStopBtn.classList.replace('bg-gray-100', 'bg-blue-50');
                 routeListUl.innerHTML = `<li class="text-center py-8 border-2 border-dashed border-gray-200 rounded-xl"><p class="text-sm text-gray-400">Route is empty.</p><p class="text-xs text-gray-400 mt-1">Add stops to begin.</p></li>`;
                 statusMsg.textContent = "Ready to build route";
                 closeMetrics();
@@ -1339,8 +1132,8 @@
                 return;
             } else {
                 addStopBtn.innerHTML = '<i class="ph ph-plus-circle text-lg"></i> Add Stop / Destination';
-                addStopBtn.classList.replace('text-[#E72A01]', 'text-gray-700');
-                addStopBtn.classList.replace('bg-red-50', 'bg-gray-100');
+                addStopBtn.classList.replace('text-blue-700', 'text-gray-700');
+                addStopBtn.classList.replace('bg-blue-50', 'bg-gray-100');
             }
 
             currentRoute.forEach((stop, index) => {
@@ -1356,9 +1149,6 @@
                 `;
                 routeListUl.appendChild(li);
             });
-            
-            // Auto-save whenever the list updates
-            saveRouteToLocalStorage();
         }
         
         // Global variables for route comparison
@@ -1370,69 +1160,129 @@
             if (areAllStopsVisible) toggleAllStops();
             
             getRouteBtn.disabled = true;
-            getRouteBtn.innerHTML = '<i class="ph ph-circle-notch text-xl animate-spin"></i> Optimizing...';
-            
-            // Start Bus Animation
-            const overlay = document.getElementById('loadingOverlay');
-            const bus = document.getElementById('progressBus');
-            overlay.classList.remove('hidden');
-            
-            let progress = 0;
-            if(bus) bus.style.left = '0%';
-            
-            // Fake Progress Timer
-            let progressTimer = setInterval(() => {
-                // Move quickly to 30%, then slowly to 90%
-                const target = 95;
-                const speed = progress < 30 ? 2 : 0.3;
-                
-                if (progress < target) {
-                    progress += speed;
-                    if(bus) bus.style.left = progress + '%';
-                }
-            }, 50);
-            
+            getRouteBtn.innerHTML = '<i class="ph ph-circle-notch text-xl" style="animation: spin 1s linear infinite; display: inline-block;"></i> Optimizing...';
+            document.getElementById('loadingOverlay').classList.remove('hidden'); // SHOW SPINNER
             statusMsg.textContent = "Calculating best path...";
             
             (async () => {
                 try {
-                    // Helper for timeout (Required for AI Prediction)
-                    const fetchWithTimeout = (url, options = {}, timeout = 8000) => {
+                    // 1. Get Original Route (OSRM)
+                    // Validate coordinates first
+                    const validStops = currentRoute.filter(s => s.lat && s.lon);
+                    if (validStops.length !== currentRoute.length) {
+                        throw new Error("Some stops have invalid coordinates.");
+                    }
+
+                    const coords = currentRoute.map(stop => `${stop.lon.toFixed(5)},${stop.lat.toFixed(5)}`).join(';');
+                    const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${coords}?geometries=geojson&overview=full`;
+
+                    // Helper for timeout
+                    const fetchWithTimeout = (url, options = {}, timeout = 10000) => {
                         return Promise.race([
                             fetch(url, options),
                             new Promise((_, reject) => setTimeout(() => reject(new Error('Request timeout')), timeout))
                         ]);
                     };
 
-                    // 1. Get Optimized Route (Backend Engine)
-                    const validStops = currentRoute.filter(s => s.lat && s.lon);
-                    if (validStops.length !== currentRoute.length) {
-                        throw new Error("Some stops have invalid coordinates.");
-                    }
+                    const osrmResponse = await fetchWithTimeout(osrmUrl);
+                    if (!osrmResponse.ok) throw new Error('OSRM Routing Failed');
+                    const routeData = await osrmResponse.json();
+                    if (!routeData.routes || routeData.routes.length === 0) throw new Error('No route found');
+                    
+                    originalRouteGeoJSON = routeData.routes[0];
 
-                    // --- ENTERPRISE ROUTING ENGINE (v6) ---
-                    // Delegate all routing, safety checks, and portal injection to the Backend.
+                    // --- BEACH ROAD AVOIDANCE LOGIC [NEW] ---
+                    // Define Bounding Box for Beach Road (Calicut)
+                    // Updated: Widened to cover southern part (approx 75.772)
+                    const BEACH_BOX = {
+                        minLat: 11.24, maxLat: 11.30,
+                        minLon: 75.76, maxLon: 75.773 
+                    };
+
+                    // Helper to check if route traverses Beach Road significantly
+                    const checkRouteSafety = (geojson) => {
+                        if (!geojson || !geojson.geometry || !geojson.geometry.coordinates) return true;
+                        
+                        // Count points inside the danger box
+                        let riskPoints = 0;
+                        const coords = geojson.geometry.coordinates; // [lon, lat]
+                        
+                        for (let pt of coords) {
+                            const lon = pt[0];
+                            const lat = pt[1];
+                            if (lat >= BEACH_BOX.minLat && lat <= BEACH_BOX.maxLat &&
+                                lon >= BEACH_BOX.minLon && lon <= BEACH_BOX.maxLon) {
+                                riskPoints++;
+                                // Log the first violation for debugging
+                                if (riskPoints === 1) console.log(`[VIOLATION] Found point on Beach Road: ${lat}, ${lon}`);
+                            }
+                        }
+                        
+                        // STRICT MODE: If even 1 point is in the zone, reroute.
+                        if (riskPoints > 0) {
+                            console.warn(`[ROUTE] Safety Violation: ${riskPoints} points inside Beach Road zone.`);
+                            return false;
+                        }
+                        return true; 
+                    };
+
+                    let finalRouteGeoJSON = originalRouteGeoJSON;
                     
-                    const response = await fetch('/api/route', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ stops: validStops })
-                    });
-                    
-                    if (!response.ok) {
-                        const errData = await response.json();
-                        throw new Error(errData.error || "Routing Service Failed");
+                    // If route is UNSAFE (takes Beach Road), force reroute via Kannur Road
+                    if (!checkRouteSafety(originalRouteGeoJSON)) {
+                        console.warn("[ROUTE] Beach Road detected! Rerouting via Kannur Road...");
+                        showToast("Avoided Beach Road (Traffic/Safety)", "info");
+                        
+                        // Define Via Point: Kannur Road / Nadakkavu
+                        const VIA_POINT = "75.77400,11.27200"; 
+                        
+                        // Construct new URL with Via Point injected in the middle
+                        // We use the same start/end, but force OSRM to go through the via point
+                        // OSRM format: start;via;end
+                        // Note: To be robust, we should find where in the stop sequence the beach road segment is.
+                        // But for simplicity, we append the Via Point to the coordinate list.
+                        // Ideally, we treat it as a "waypoint".
+                        
+                        // Strategy: Add VIA Point to the request URL's coordinate string
+                        // We need to inject it *between* the stops. simpler: just add it to the list passed to OSRM?
+                        // No, OSRM expects: lat,lon;lat,lon
+                        // If we have stops A -> B -> C, and A->B is the beach part, we need A -> VIA -> B -> C.
+                        
+                        // IMPROVED STRATEGY:
+                        // Just re-request entirely with the via point added as a "hint" isn't standard OSRM.
+                        // We must add it as a coordinate.
+                        // Since we don't know *where* to insert it easily without complex logic,
+                        // we will append it to the coordinates list, BUT OSRM might treat it as a destination.
+                        // Correct OSRM usage for "via": treat it as a coordinate.
+                        
+                        // Quick fix: Add Kannur Road waypoint to the end of request? No, that changes destination.
+                        // We will inject it approximately in the middle of the coordinate set for the URL
+                        // effectively adding it as a stop, but we won't show it in the UI list (currentRoute).
+                        
+                        // 1. Get all coords
+                        const coordList = currentRoute.map(stop => `${stop.lon.toFixed(5)},${stop.lat.toFixed(5)}`);
+                        
+                        // 2. Insert Via Point in the middle (heuristic)
+                        const midIndex = Math.floor(coordList.length / 2);
+                        coordList.splice(midIndex, 0, VIA_POINT);
+                        
+                        const newCoords = coordList.join(';');
+                        const safeUrl = `https://router.project-osrm.org/route/v1/driving/${newCoords}?geometries=geojson&overview=full`;
+                        
+                        try {
+                            const safeResponse = await fetchWithTimeout(safeUrl);
+                            if (safeResponse.ok) {
+                                const safeData = await safeResponse.json();
+                                if (safeData.routes && safeData.routes.length > 0) {
+                                    finalRouteGeoJSON = safeData.routes[0];
+                                    console.log("[ROUTE] Safe route calculated via Kannur Road.");
+                                }
+                            }
+                        } catch (e) {
+                            console.error("Failed to calculate safe detour:", e);
+                            // Fallback to original if safe route fails
+                        }
                     }
-                    
-                    const routeData = await response.json();
-                    if (!routeData.routes || routeData.routes.length === 0) throw new Error('No valid route returned from Engine');
-                    
-                    // Route is guaranteed safe by Server Validator
-                    finalRouteGeoJSON = routeData.routes[0];
-                    originalRouteGeoJSON = finalRouteGeoJSON; 
-                    
-                    console.log("[ENGINE] ✅ Received certified safe route.");
-                    showToast("Route optimized by Enterprise Engine", "success");
 
                     const distance = finalRouteGeoJSON.distance / 1000;
                     
@@ -1500,7 +1350,7 @@
                         // Reset button state
                         if (toggleStopsBtn) {
                             toggleStopsBtn.innerHTML = '<i class="ph ph-map-pin"></i> Show All Stops';
-                            toggleStopsBtn.classList.remove('bg-red-50', 'text-[#E72A01]', 'border-red-200');
+                            toggleStopsBtn.classList.remove('bg-blue-50', 'text-blue-700', 'border-blue-200');
                         }
                         areAllStopsVisible = false;
                     }
@@ -1513,18 +1363,9 @@
                     statusMsg.textContent = "Error: " + error.message;
                     showToast("Route calculation failed: " + error.message, 'error');
                 } finally {
-                    // Finish Animation
-                    if (progressTimer) clearInterval(progressTimer);
-                    
-                    const bus = document.getElementById('progressBus');
-                    if(bus) bus.style.left = '100%';
-                    
-                    // Wait for arrival before hiding
-                    setTimeout(() => {
-                        getRouteBtn.disabled = false;
-                        getRouteBtn.innerHTML = '<i class="ph ph-lightning text-xl"></i> Optimize Route';
-                        document.getElementById('loadingOverlay').classList.add('hidden'); // HIDE SPINNER
-                    }, 500);
+                    getRouteBtn.disabled = false;
+                    getRouteBtn.innerHTML = '<i class="ph ph-lightning text-xl"></i> Optimize Route';
+                    document.getElementById('loadingOverlay').classList.add('hidden'); // HIDE SPINNER
                 }
             })();
         }
@@ -1592,7 +1433,7 @@
                             <div class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Intermediate Stop</div>
                             <div class="text-sm font-bold text-slate-800 mb-2">${stop.name}</div>
                             <button onclick="addIntermediateStopToRoute(${stop.bus_stop_id})" 
-                                    class="w-full py-1.5 px-3 bg-[#E72A01] text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-[#8C0000] transition">
+                                    class="w-full py-1.5 px-3 bg-blue-600 text-white text-[10px] font-bold rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 transition">
                                 <i class="ph ph-plus-circle"></i> ADD TO TRIP
                             </button>
                         </div>
@@ -1622,8 +1463,7 @@
             console.log(`[UI] Rendered ${intermediateMarkers.length} intermediate stops.`);
         }
 
-        // Expose to window for Popup onclick
-        window.addIntermediateStopToRoute = function(stopId) {
+        function addIntermediateStopToRoute(stopId) {
             const stop = busStops.find(s => s.bus_stop_id === stopId);
             if (!stop) return;
             
@@ -1683,7 +1523,7 @@
             markers.forEach(m => map.removeLayer(m));
             markers = [];
             stops.forEach((stop, index) => {
-                let color = '#E72A01';
+                let color = '#3b82f6';
                 if (index === 0) color = '#22c55e';
                 else if (index === stops.length - 1) color = '#ef4444';
                 
@@ -1703,6 +1543,5 @@
         function openMetrics() { metricsPanel.classList.remove('opacity-0', 'translate-x-10'); }
         function closeMetrics() { metricsPanel.classList.add('opacity-0', 'translate-x-10'); }
     </script>
-    </div><!-- End flex wrapper -->
 </body>
 </html>

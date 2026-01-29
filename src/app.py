@@ -45,6 +45,18 @@ except ImportError as e:
     print(f"[WARN] Route profitability model not found: {e}.")
     ROUTE_ML_AVAILABLE = False
 
+# Import Routing Engine (v6)
+try:
+    from routing.engine import RoutingEngine
+    routing_engine = RoutingEngine()
+    print("[OK] Routing Engine v6 initialized.")
+except ImportError as e:
+    print(f"[ERROR] Routing Engine load failed: {e}")
+    routing_engine = None
+except Exception as e:
+    print(f"[ERROR] Routing Engine init failed: {e}")
+    routing_engine = None
+
 # --- CONFIGURATION ---
 # Get the directory where app.py is located
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -100,7 +112,33 @@ if DB_AVAILABLE:
 # Register authentication routes
 if AUTH_AVAILABLE:
     register_auth_routes(app)
-    print("[OK] Authentication routes registered.")
+
+# --- ROUTING API (v6) ---
+@app.route('/api/route', methods=['POST'])
+def get_safe_route():
+    if not routing_engine:
+        return jsonify({"error": "Routing Engine Unavailable"}), 503
+        
+    try:
+        data = request.json
+        stops = data.get('stops', [])
+        if not stops:
+            return jsonify({"error": "No stops provided"}), 400
+            
+        route_geo = routing_engine.get_optimized_route(stops)
+        return jsonify(route_geo)
+        
+    except Exception as e:
+        print(f"[ROUTE ERROR] {e}")
+        # Determine error code based on message
+        msg = str(e)
+        if "Circuit Open" in msg:
+            return jsonify({"error": "Routing Service Temporarily Unavailable (Upstream Limit)"}), 503
+        elif "Restricted" in msg or "Violation" in msg:
+             return jsonify({"error": msg}), 422
+        else:
+             return jsonify({"error": msg}), 500
+
 
 # Load the trained model
 # Load the trained model (Strict Mode)
@@ -341,9 +379,14 @@ def predict():
                 print(f"[WARN] Optimization step failed: {e}")
                 traceback.print_exc()
 
+        # Calculate actual fuel savings (difference between original and optimized route)
+        actual_fuel_saved = 0
+        if optimized_result and optimized_result.get('savings_inr', 0) > 0:
+            actual_fuel_saved = optimized_result['savings_inr']
+        
         if DB_AVAILABLE:
             try:
-                log_route_optimization(stop_ids, distance_km or 0, int((distance_km or 0) / 0.5), orig_pass, orig_cost)
+                log_route_optimization(stop_ids, distance_km or 0, int((distance_km or 0) / 0.5), orig_pass, actual_fuel_saved)
             except Exception as e:
                 print(f"[WARN] Failed to log analytics: {e}")
 

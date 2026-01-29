@@ -1,0 +1,19 @@
+{
+  "version": "v1.0",
+  "zones": [
+    {
+      "id": "ZONE_BEACH_RD",
+      "name": "Beach Road Exclusion Zone",
+      "type": "EXCLUSION_POLYGON",
+      "geometry": [
+        [11.23000, 75.75500],
+        [11.28000, 75.75500],
+        [11.28000, 75.76800],
+        [11.23000, 75.76800]
+      ],
+      "note": "Approximate polygon covering Beach Road stretch from South Beach to Bhatt Road",
+      "rule": "FORBIDDEN_SEGMENT",
+      "priority": 100
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "version": "v1.1",
+  "portals": {
+    "Nadakkave": {
+      "type": "ACCESS_CONTROLLED_STOP",
+      "arrival_mode": "ROAD_ENTRANCE_ONLY",
+      "priority": 100,
+      "last_verified": "2026-01-29",
+      "entry_gate": {"lat": 11.27050, "lon": 75.77950},
+      "exit_gate":  {"lat": 11.27050, "lon": 75.77950},
+      "notes": "Force Kannur Road access (East)"
+    },
+    "Vellayil": {
+      "type": "ACCESS_CONTROLLED_STOP",
+      "arrival_mode": "ROAD_ENTRANCE_ONLY",
+      "priority": 100,
+      "last_verified": "2026-01-29",
+      "entry_gate": {"lat": 11.26100, "lon": 75.77800},
+      "exit_gate":  {"lat": 11.26100, "lon": 75.77800},
+      "notes": "Gandhi Road Inland Access"
+    },
+    "West Hill": {
+      "type": "ACCESS_CONTROLLED_STOP",
+      "arrival_mode": "ROAD_ENTRANCE_ONLY",
+      "priority": 100,
+      "last_verified": "2026-01-29",
+      "entry_gate": {"lat": 11.28500, "lon": 75.77500}, 
+      "exit_gate": {"lat": 11.28500, "lon": 75.77500},
+      "notes": "Force inland access"
+    },
+    "Konad Beach": {
+      "type": "ACCESS_CONTROLLED_STOP",
+      "arrival_mode": "ROAD_ENTRANCE_ONLY",
+      "priority": 90,
+      "entry_gate": {"lat": 11.28500, "lon": 75.77500},
+      "exit_gate":  {"lat": 11.28500, "lon": 75.77500},
+      "notes": "Snap to West Hill Inland"
+    },
+    "Kozhikode Beach": {
+      "type": "ACCESS_CONTROLLED_STOP",
+      "arrival_mode": "ROAD_ENTRANCE_ONLY",
+      "priority": 100,
+      "entry_gate": {"lat": 11.26100, "lon": 75.77800},
+      "exit_gate":  {"lat": 11.26100, "lon": 75.77800},
+      "notes": "Force Gandhi Road Access (Vellayil)"
+    },
+    "Calicut Beach": {
+      "type": "ACCESS_CONTROLLED_STOP",
+      "arrival_mode": "ROAD_ENTRANCE_ONLY",
+      "priority": 100,
+      "entry_gate": {"lat": 11.26100, "lon": 75.77800},
+      "exit_gate":  {"lat": 11.26100, "lon": 75.77800},
+      "notes": "Synonym: Force Gandhi Road Access (Vellayil)"
+    },
+    "Beach Hospital": {
+      "type": "ACCESS_CONTROLLED_STOP",
+      "arrival_mode": "ROAD_ENTRANCE_ONLY",
+      "priority": 100,
+      "entry_gate": {"lat": 11.26100, "lon": 75.77800},
+      "exit_gate":  {"lat": 11.26100, "lon": 75.77800},
+      "notes": "Landmark: Force Gandhi Road Access (Vellayil)"
+    },
+    "South Beach": {
+      "type": "ACCESS_CONTROLLED_STOP",
+      "arrival_mode": "ROAD_ENTRANCE_ONLY",
+      "priority": 100,
+      "entry_gate": {"lat": 11.25200, "lon": 75.78800},
+      "exit_gate":  {"lat": 11.25200, "lon": 75.78800},
+      "notes": "Force Palayam Inland Access"
+    }
+  }
+}
